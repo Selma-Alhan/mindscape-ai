@@ -1,0 +1,540 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>MindScape AI Task Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: coordination board — header band, fairness strip, then tabbed task / teacher / module views */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --ink:#18202b; --muted:#5a6575; --line:#dde2e9;
+  --accent:#12706a; --accent-soft:#e1f1ef; --warm:#b4532c; --warm-soft:#f8e9e1;
+  --tr:#c2382e; --it:#2b8650; --hr:#2c5bb5; --pt:#a8731c;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161c; --surface:#19202a; --ink:#e6eaf0; --muted:#9aa4b3; --line:#2a3340;
+  --accent:#4dbdb3; --accent-soft:#183634; --warm:#e58c66; --warm-soft:#3a251c;
+  --tr:#ef6a5f; --it:#5cc285; --hr:#6f98e8; --pt:#d9a447; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#11161c; --surface:#19202a; --ink:#e6eaf0; --muted:#9aa4b3; --line:#2a3340;
+  --accent:#4dbdb3; --accent-soft:#183634; --warm:#e58c66; --warm-soft:#3a251c;
+  --tr:#ef6a5f; --it:#5cc285; --hr:#6f98e8; --pt:#d9a447; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:700;line-height:1.1}
+h2{font-size:22px;font-weight:700}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+header{display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:flex-end}
+.head-text{display:flex;flex-direction:column;gap:8px;min-width:0;max-width:640px}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 12px;font-size:14px}
+.btn:hover{border-color:var(--accent)}
+.btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;color:var(--muted);padding:7px 11px;font-size:13px;font-family:var(--f-mono)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.stat{background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--f-display);font-size:26px;line-height:1.1}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.fair{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.fair-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:baseline}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar-row{display:grid;grid-template-columns:150px 1fr 44px;gap:10px;align-items:center;cursor:pointer;border-radius:6px;padding:2px 4px}
+.bar-row:hover,.bar-row.sel{background:var(--accent-soft)}
+.bar-name{display:flex;gap:6px;align-items:center;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track{position:relative;height:14px;background:var(--bg);border-radius:4px;overflow:visible}
+.seg-mod,.seg-task{position:absolute;top:0;bottom:0}
+.seg-mod{background:var(--accent);border-radius:4px 0 0 4px}
+.seg-task{background:color-mix(in srgb,var(--accent) 45%,var(--surface))}
+.avg{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--warm)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+@media (max-width:520px){.bar-row{grid-template-columns:96px 1fr 36px}}
+
+.cc{font-family:var(--f-mono);font-size:10.5px;font-weight:500;letter-spacing:.05em;padding:1px 5px;border-radius:4px;color:var(--surface);flex:none}
+.cc.TR{background:var(--tr)}.cc.IT{background:var(--it)}.cc.HR{background:var(--hr)}.cc.PT{background:var(--pt)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:none;padding:10px 14px;color:var(--muted);font-family:var(--f-display);font-size:16px;font-weight:500;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.filter-note{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px;background:var(--accent-soft);padding:8px 12px;border-radius:8px}
+.linkbtn{border:0;background:none;color:var(--accent);text-decoration:underline;padding:0}
+
+.phase{display:flex;flex-direction:column;gap:10px}
+.phase-head{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.3fr);gap:14px;padding:14px 18px;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item.dim{opacity:.35}
+.item-main{display:flex;flex-direction:column;gap:4px;min-width:0}
+.item-title{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.when{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.why{font-size:13px;color:var(--muted)}
+.people{display:flex;flex-direction:column;gap:6px;min-width:0}
+.prow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.role{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);width:62px;flex:none}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:2px 10px 2px 4px;font-size:14px;background:var(--bg)}
+.chip.lead{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+.mark{font-size:12px;font-family:var(--f-mono)}
+.mark.ok{color:var(--accent)}
+.mark.new{color:var(--warm)}
+.tag{font-family:var(--f-mono);font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid currentColor}
+.tag.new{color:var(--warm)}
+.tag.form{color:var(--accent)}
+select{font:inherit;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:3px 6px;background:var(--surface);color:var(--ink);max-width:100%}
+@media (max-width:720px){.item{grid-template-columns:minmax(0,1fr)}}
+
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.tcard-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.score{font-family:var(--f-display);font-size:28px;font-weight:700;line-height:1}
+.tcard ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.tcard li{display:flex;gap:8px;font-size:14px;align-items:baseline}
+.tcard li .r{font-family:var(--f-mono);font-size:11px;color:var(--muted);width:54px;flex:none;text-transform:uppercase}
+.meta{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line);padding-top:8px}
+
+.pref{font-family:var(--f-mono);font-size:10.5px;padding:0 5px;border-radius:4px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.pref.p1{color:var(--accent);border-color:var(--accent)}
+.notes{font-size:13.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px;max-width:760px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:9px 16px;border-radius:8px;font-size:14px}
+textarea.fallback{width:100%;min-height:200px;font-family:var(--f-mono);font-size:12px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+.tgrid{grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr));gap:14px}
+.mcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:11px;min-width:0}
+.mcard.t{border-top:3px solid var(--accent)}
+.mcard.s{border-top:3px solid var(--warm)}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mdate{font-family:var(--f-display);font-size:17px;font-weight:500}
+.times{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.times>div{background:var(--bg);padding:6px 10px;display:flex;flex-direction:column;min-width:0}
+.times .eyebrow{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.times b{font-size:18px}
+.ag{margin:4px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.att{font-size:13.5px;display:flex;flex-direction:column;gap:3px;border-top:1px solid var(--line);padding-top:8px}
+.cal{align-self:flex-start;text-decoration:none;font-size:13px}
+.out{font-size:13px}
+.out b{font-weight:700}
+.draft{font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.seg-mod,.seg-task{transition:width .25s ease,left .25s ease}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="head-text">
+      <span class="eyebrow" id="eyebrow"></span>
+      <h1>MindScape AI <span style="color:var(--accent)">·</span> <span id="h1sub"></span></h1>
+      <p class="muted" id="lede"></p>
+    </div>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Language">
+        <button id="lang-tr" type="button">TR</button>
+        <button id="lang-en" type="button">EN</button>
+      </div>
+      <button class="btn" id="btn-edit" type="button" aria-pressed="false"></button>
+      <button class="btn" id="btn-copy" type="button"></button>
+      <button class="btn" id="btn-reset" type="button"></button>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <section class="fair" aria-labelledby="fair-title">
+    <div class="fair-head">
+      <h2 id="fair-title"></h2>
+      <span class="mono muted" id="fair-sum"></span>
+    </div>
+    <div class="bars" id="bars"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="filter"></div>
+  <div id="view" style="display:flex;flex-direction:column;gap:26px"></div>
+  <div id="fallback"></div>
+  <div class="notes" id="notes"></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const T = {
+ selma:{n:"Selma Alhan",c:"TR",role:{tr:"Kurucu / koordinatör · Fizik",en:"Founder / coordinator · Physics"},st:10,vol:["meeting","exhibition","survey","twinspace","dissemination"],avail:{tr:"Pzt, Sal, Per · 18:00 sonrası (TSİ)",en:"Mon, Tue, Thu · after 18:00 (TRT)"},mp:{M1:1,M2:2}},
+ esra:{n:"Esra Yurt Altaylı",c:"TR",role:{tr:"Proje öğretmeni · İngilizce",en:"Project teacher · English"},st:6,vol:["survey","dissemination"],avail:{tr:"Cuma · 18:00 sonrası (TSİ)",en:"Fri · after 18:00 (TRT)"},mp:{M1:1,M5:2}},
+ anil:{n:"Anıl Kalkan",c:"TR",role:{tr:"Proje öğretmeni · Matematik",en:"Project teacher · Mathematics"},st:7,vol:["logo","ebook"],avail:{tr:"Pzt–Per · 18:00 sonrası (TSİ)",en:"Mon–Thu · after 18:00 (TRT)"},mp:{M5:1,M3:2}},
+ ugur:{n:"Uğur Çelik",c:"TR",role:{tr:"Rehber öğretmen",en:"Guidance counsellor"},st:7,vol:["meeting","survey"],avail:{tr:"Çarşamba · 15:00–18:00 (TSİ)",en:"Wed · 15:00–18:00 (TRT)"},mp:{M3:1,M5:2}},
+ arcangelo:{n:"Arcangelo Passarella",c:"IT",role:{tr:"Kurucu / koordinatör · Mat. & Fizik",en:"Founder / coordinator · Maths & Physics"},st:19,vol:["charter","survey","twinspace","dissemination"],avail:{tr:"Pzt–Cum · 18:00 sonrası (CET)",en:"Mon–Fri · after 18:00 (CET)"},mp:{M2:1,M1:2}},
+ matea:{n:"Matea Mihaljević",c:"HR",role:{tr:"Okul pedagogu",en:"School pedagogue"},st:10,vol:["survey","dissemination"],avail:{tr:"Pzt–Cum · 12:00 öncesi (CET)",en:"Mon–Fri · before 12:00 (CET)"},mp:{M4:1,M6:2}},
+ palma:{n:"Palma Tolić",c:"HR",role:{tr:"Proje öğretmeni · Hırvat dili",en:"Project teacher · Croatian language"},st:10,vol:["logo","ebook"],avail:{tr:"Pzt–Cum · 12:00–15:00 (CET)",en:"Mon–Fri · 12:00–15:00 (CET)"},mp:{M4:1,M5:2}},
+ milena:{n:"Milena Rakić",c:"HR",role:{tr:"Proje öğretmeni · Okul kütüphanecisi",en:"Project teacher · School librarian"},st:10,vol:["ebook"],avail:{tr:"Per, Cum · 12:00 sonrası (CET)",en:"Thu, Fri · after 12:00 (CET)"},mp:{M1:1,M3:1,M5:1,M2:2,M4:2,M6:2}},
+ pedro:{n:"Pedro Honrado",c:"PT",role:{tr:"Proje öğretmeni · Coğrafya",en:"Project teacher · Geography"},st:10,vol:["logo","meeting","ebook","dissemination"],avail:{tr:"Cuma · 15:00–18:00 (WET)",en:"Fri · 15:00–18:00 (WET)"},mp:{M4:1,M6:2}}
+};
+const ORDER = Object.keys(T);
+
+const MODULES = [
+ {id:"M1",t:{tr:"AI Literacy",en:"AI Literacy"},when:{tr:"Kasım",en:"November"},lead:"selma",sup:["esra","milena"]},
+ {id:"M2",t:{tr:"Critical Thinking & Fact-Checking",en:"Critical Thinking & Fact-Checking"},when:{tr:"Kasım",en:"November"},lead:"arcangelo",sup:["selma"]},
+ {id:"M3",t:{tr:"Ethics & Empathy",en:"Ethics & Empathy"},when:{tr:"Aralık",en:"December"},lead:"ugur",sup:["milena"]},
+ {id:"M4",t:{tr:"Digital Well-Being",en:"Digital Well-Being"},when:{tr:"Aralık",en:"December"},lead:"matea",sup:["palma","pedro"]},
+ {id:"M5",t:{tr:"Creative AI",en:"Creative AI"},when:{tr:"Ocak",en:"January"},lead:"anil",sup:["esra","palma"]},
+ {id:"M6",t:{tr:"Social Impact Challenge",en:"Social Impact Challenge"},when:{tr:"Ocak",en:"January"},lead:"pedro",sup:["milena","arcangelo"]}
+];
+
+const PHASES = [
+ {id:"p1",t:{tr:"Başlangıç",en:"Kick-off"},d:{tr:"30 Eki – 13 Kas",en:"30 Oct – 13 Nov"}},
+ {id:"p2",t:{tr:"Takımlar ve modüller",en:"Teams and modules"},d:{tr:"16 Kas – 18 Ara",en:"16 Nov – 18 Dec"}},
+ {id:"p3",t:{tr:"Ürünler ve kapanış",en:"Products and closing"},d:{tr:"Ara – 22 Oca",en:"Dec – 22 Jan"}},
+ {id:"p4",t:{tr:"Süreç boyunca",en:"Throughout the project"},d:{tr:"Ekim – Ocak",en:"Oct – Jan"}}
+];
+
+const TASKS = [
+ {id:"t7",ph:"p1",k:"twinspace",lead:"arcangelo",sup:["selma"],when:{tr:"6 Kas'a kadar",en:"by 6 Nov"},
+  t:{tr:"TwinSpace yapısı ve sayfalar",en:"TwinSpace structure and pages"},
+  w:{tr:"Formda TwinSpace'i yalnızca Arcangelo ve Selma seçti. Liderlik İtalya'da, Türkiye destekliyor.",en:"Only Arcangelo and Selma chose TwinSpace in the form. Italy leads, Türkiye supports."}},
+ {id:"t2",ph:"p1",k:null,lead:"matea",sup:[],when:{tr:"13 Kas'a kadar",en:"by 13 Nov"},
+  t:{tr:"Veli izin formları ve güvenli YZ kullanım kuralları",en:"Parental consent forms and safe AI use rules"},
+  w:{tr:"Konuyu Anıl önerdi. Bir pedagog olarak Matea ortak şablonu hazırlıyor, her okul kendi velilerinden izni kendisi topluyor.",en:"Anıl raised this. Matea, as pedagogue, prepares the shared template; each school collects consent from its own parents."}},
+ {id:"t1",ph:"p1",k:"survey",lead:"ugur",sup:["matea"],when:{tr:"2–13 Kas",en:"2–13 Nov"},
+  t:{tr:"Öğrenci ön testi (Google Forms)",en:"Student pre-test (Google Forms)"},
+  w:{tr:"Anketlere gönüllü olan iki rehberlik uzmanı birlikte çalışıyor. Ön test hem iyi oluşu hem YZ farkındalığını ölçüyor.",en:"The two guidance specialists who volunteered for surveys. The pre-test covers well-being and AI awareness."}},
+ {id:"t3",ph:"p1",k:null,lead:"palma",sup:[],when:{tr:"2–13 Kas",en:"2–13 Nov"},
+  t:{tr:"Tanışma etkinliği (Padlet tanıtım duvarı)",en:"Getting-to-know activity (Padlet intro wall)"},
+  w:{tr:"Formda yer almayan yeni bir görev. Palma'nın önerdiği 'YZ kullanımı röportajları' tanışma etkinliğinin içeriği olabilir.",en:"New task not in the form. Palma's 'AI use interviews' idea can be the content of the intro activity."}},
+ {id:"t4",ph:"p1",k:"logo",lead:"palma",sup:["anil"],when:{tr:"Duyuru 2 Kas · oylama 23–25 Kas",en:"Launch 2 Nov · vote 23–25 Nov"},
+  t:{tr:"Logo yarışması",en:"Logo contest"},
+  w:{tr:"Gönüllüler Palma, Anıl ve Pedro. Pedro'nun zaten M6 liderliği olduğu için Palma yürütüyor.",en:"Volunteers were Palma, Anıl and Pedro. Pedro already leads M6, so Palma runs it."}},
+
+ {id:"t8",ph:"p2",k:null,lead:"milena",sup:["matea"],when:{tr:"23–27 Kas",en:"23–27 Nov"},
+  t:{tr:"Karma uluslararası öğrenci takımlarının kurulması",en:"Forming international mixed student teams"},
+  w:{tr:"Yeni görev. Milena ortakların tanışmasını önemsediğini yazmıştı, Matea pedagojik destek veriyor.",en:"New task. Milena asked for partners to get to know each other; Matea gives pedagogical support."}},
+ {id:"t9",ph:"p2",k:null,lead:"anil",sup:["palma"],when:{tr:"23 Kas – 4 Ara",en:"23 Nov – 4 Dec"},
+  t:{tr:"Öğrenci önerileri ve oylama (Padlet + Forms)",en:"Student proposals and voting (Padlet + Forms)"},
+  w:{tr:"Dönüşümlü öğrenci koordinatörü dahil yöntemi Anıl önerdi.",en:"Anıl proposed the method, including a rotating student coordinator."}},
+ {id:"t11",ph:"p4",k:"meeting",lead:"pedro",sup:["ugur"],when:{tr:"Tüm buluşmalar",en:"All meetings"},
+  t:{tr:"Buluşmaların teknik yönetimi (bağlantı, kayıt, odalar)",en:"Technical running of meetings (link, recording, breakout rooms)"},
+  w:{tr:"İkisi de toplantı düzenlemeye gönüllü. Sunucular içeriği yönetirken bu ikili bağlantıyı açar, kaydı alır ve takım odalarını kurar.",en:"Both volunteered to host meetings. While the hosts lead the content, they open the link, record and set up team rooms."}},
+ {id:"t12",ph:"p2",k:"charter",lead:"ugur",sup:["arcangelo"],when:{tr:"1–18 Ara",en:"1–18 Dec"},
+  t:{tr:"Ethical AI Charter (Etik YZ Bildirgesi)",en:"Ethical AI Charter"},
+  w:{tr:"Bu görevi yalnızca Arcangelo seçti, ancak M2 ve TwinSpace'le yükü zaten dolu. Uğur, M3 etik modülüyle bağlantılı olarak yürütüyor.",en:"Only Arcangelo chose it, but he already carries M2 and TwinSpace. Uğur leads it as it links to M3 Ethics."}},
+
+ {id:"t13",ph:"p3",k:"ebook",lead:"milena",sup:["palma"],when:{tr:"1 Ara – 15 Oca",en:"1 Dec – 15 Jan"},
+  t:{tr:"“AI with Heart” ortak e-kitabı",en:"“AI with Heart” joint e-book"},
+  w:{tr:"Kütüphaneci olan Milena Book Creator kullanıyor. Hırvat ekibi ürünü üstleniyor.",en:"Milena is the librarian and uses Book Creator; the Croatian team owns the product."}},
+ {id:"t14",ph:"p3",k:"survey",lead:"matea",sup:["ugur"],when:{tr:"11–18 Oca",en:"11–18 Jan"},
+  t:{tr:"Son test ve değerlendirme raporu",en:"Post-test and evaluation report"},
+  w:{tr:"Ön testi hazırlayan ikili (Uğur ve Matea) son testi de yapıyor, böylece iki test birbiriyle karşılaştırılabilir oluyor. Ön testte Uğur, son testte Matea lider.",en:"The same pair (Uğur and Matea) runs both tests so the results are comparable. Uğur leads the pre-test, Matea the post-test."}},
+ {id:"t15",ph:"p3",k:"exhibition",lead:"selma",sup:["esra"],when:{tr:"15 Oca",en:"15 Jan"},
+  t:{tr:"Dijital sergi ve final etkinliği",en:"Digital exhibition and final event"},
+  w:{tr:"Formda bu görevi yalnızca Selma seçti. Esra okulun katkısı olarak sergiyi önermişti.",en:"Only Selma chose this in the form; Esra offered an exhibition as her school's contribution."}},
+ {id:"t16",ph:"p3",k:null,lead:"pedro",sup:["anil"],when:{tr:"22 Oca'ya kadar",en:"by 22 Jan"},
+  t:{tr:"Katılım sertifikaları (öğrenci ve öğretmen)",en:"Participation certificates (students and teachers)"},
+  w:{tr:"Yeni görev. İkisi de Canva kullanıyor. Pedro'nun yükü dengeleniyor.",en:"New task. Both use Canva; balances Pedro's load."}},
+ {id:"t18",ph:"p3",k:null,lead:"anil",sup:["milena"],when:{tr:"Ocak – Şubat",en:"Jan – Feb"},
+  t:{tr:"eTwinning Kalite Etiketi başvurularının takibi",en:"eTwinning Quality Label applications"},
+  w:{tr:"Yeni görev. Her öğretmen kendi başvurusunu yapar, lider kanıt listesini ve takvimi takip eder.",en:"New task. Each teacher applies individually; the lead tracks the evidence list and deadlines."}},
+
+ {id:"t5",ph:"p4",k:"meeting",lead:"selma",sup:["ugur"],when:{tr:"Ayda bir",en:"Monthly"},
+  t:{tr:"Buluşmaların planlanması (tarih, gündem, duyuru)",en:"Planning the meetings (dates, agendas, announcements)"},
+  w:{tr:"Koordinatör olarak Selma. Uğur da toplantılara gönüllü.",en:"Selma as coordinator; Uğur also volunteered for meetings."}},
+ {id:"t6",ph:"p4",k:null,lead:"palma",sup:["esra"],when:{tr:"Her toplantıdan sonra",en:"After each meeting"},
+  t:{tr:"Toplantı tutanakları",en:"Meeting minutes"},
+  w:{tr:"Yeni görev. Toplantı saatlerine göre biri CET, biri TSİ'den katılan iki kişi.",en:"New task. One CET and one TRT person, so whoever attends can take notes."}},
+ {id:"t10",ph:"p4",k:"twinspace",lead:"arcangelo",sup:["milena"],when:{tr:"Her ay sonu",en:"End of each month"},
+  t:{tr:"Kanıt albümleri (fotoğraf, kayıt, günlük)",en:"Evidence albums (photos, logs, diaries)"},
+  w:{tr:"Her okul kendi kanıtını yükler. Lider eksikleri takip eder.",en:"Each school uploads its own evidence; the lead checks for gaps."}},
+ {id:"t17",ph:"p4",k:"dissemination",lead:"esra",sup:["pedro"],when:{tr:"Süreç boyunca",en:"Ongoing"},
+  t:{tr:"Yaygınlaştırma (okul siteleri, sosyal medya, haberler)",en:"Dissemination (school sites, social media, news)"},
+  w:{tr:"Beş gönüllü vardı. Yükü az olan Esra ve Pedro'ya verildi. Her okul kendi kanalında paylaşıyor.",en:"Five volunteers; given to Esra and Pedro, who had lighter loads. Each school posts on its own channels."}}
+];
+
+const OUT = {
+ t7:{tr:"TwinSpace'te modül sayfaları ve forum başlıkları",en:"Module pages and forum threads on TwinSpace"},
+ t2:{tr:"Ortak veli izin şablonu ve öğrenciler için YZ kuralları sayfası",en:"Shared consent template and a student AI rules page"},
+ t1:{tr:"Ön test formu ve sonuç özeti",en:"Pre-test form and results summary"},
+ t3:{tr:"Padlet tanıtım duvarı ve YZ kullanımı röportajları",en:"Padlet intro wall and AI use interviews"},
+ t4:{tr:"Proje logosu ve oylama sonuçları",en:"Project logo and voting results"},
+ t8:{tr:"Karma takım listesi (her takımda her ülkeden öğrenci)",en:"Mixed team list (students from every country in each team)"},
+ t9:{tr:"Seçilen etkinliklerin listesi ve oylama sonuçları",en:"List of chosen activities and voting results"},
+ t11:{tr:"Her buluşma için bağlantı, kayıt ve ekran görüntüleri",en:"Link, recording and screenshots for every meeting"},
+ t12:{tr:"Öğrencilerin birlikte yazdığı Etik YZ Bildirgesi",en:"Ethical AI Charter co-written by students"},
+ t13:{tr:"Her takımın katkısıyla Book Creator e-kitabı",en:"Book Creator e-book with a contribution from every team"},
+ t14:{tr:"Son test formu ve ön test–son test karşılaştırma raporu",en:"Post-test form and pre/post comparison report"},
+ t15:{tr:"Dijital sergi sayfası ve final etkinliği akışı",en:"Digital exhibition page and final event run sheet"},
+ t16:{tr:"Canva sertifika şablonu ve tüm katılımcılara sertifika",en:"Canva certificate template and certificates for everyone"},
+ t18:{tr:"Kanıt kontrol listesi ve başvuru takvimi",en:"Evidence checklist and application timeline"},
+ t5:{tr:"Toplantı takvimi, bağlantılar ve gündemler",en:"Meeting calendar, links and agendas"},
+ t6:{tr:"Her toplantı için TwinSpace'te kısa tutanak",en:"Short minutes on TwinSpace for every meeting"},
+ t10:{tr:"Aylık kanıt albümleri",en:"Monthly evidence albums"},
+ t17:{tr:"Okul sitesi ve sosyal medya haberleri",en:"School website and social media news posts"}
+};
+
+/* availability from the form, in UTC hours; days: 1=Mon … 5=Fri */
+const AV = {
+ selma:{days:[1,2,4],from:15,to:21}, esra:{days:[5],from:15,to:21}, anil:{days:[1,2,3,4],from:15,to:21},
+ ugur:{days:[3],from:12,to:15}, arcangelo:{days:[1,2,3,4,5],from:17,to:22}, matea:{days:[1,2,3,4,5],from:7,to:11},
+ palma:{days:[1,2,3,4,5],from:11,to:14}, milena:{days:[4,5],from:11,to:22}, pedro:{days:[5],from:15,to:18}
+};
+
+/* every meeting is joint (students + teachers). utc = start hour in UTC (TR +3, CET +1, WET +0 in winter) */
+const MEETINGS = [
+ {id:"#1",d:"2026-10-30",utc:17,host:["selma","arcangelo"],
+  t:{tr:"Açılış buluşması",en:"Kick-off meeting"},
+  ag:{tr:["Öğretmen ve öğrencilerin tanışması","Projenin hedefleri ve MindScape Academy modülleri","Takvim ve görev panosu","Logo yarışmasının duyurusu","Güvenli YZ kullanım kuralları"],
+      en:["Teachers and students get to know each other","Project aims and the MindScape Academy modules","Calendar and task board","Launching the logo contest","Safe AI use rules"]}},
+ {id:"#2",d:"2026-11-27",utc:17,host:["pedro","palma"],
+  t:{tr:"Takımlar ve logo buluşması",en:"Teams and logo meeting"},
+  ag:{tr:["Logo yarışmasının sonucu","Karma takımların açıklanması ve takım tanışması","Etkinlik önerileri ve oylamanın başlaması","M1 ve M2'den ilk ürünler"],
+      en:["Logo contest result","Announcing the mixed teams and team introductions","Launching activity proposals and voting","First products from M1 and M2"]}},
+ {id:"#3",d:"2026-12-04",utc:17,host:["anil","esra"],
+  t:{tr:"Ara değerlendirme buluşması",en:"Mid-project meeting"},
+  ag:{tr:["Takımların M1 ve M2 ürün sunumları","Öğrenci oylamasının sonuçları","M3, M4 ve Ethical AI Charter'ın başlaması","Aralık sınav ve tatil dönemi için asenkron işler"],
+      en:["Team presentations from M1 and M2","Student voting results","Starting M3, M4 and the Ethical AI Charter","Asynchronous work for the December exam and holiday period"]}},
+ {id:"#4",d:"2027-01-08",utc:17,host:["milena","ugur"],
+  t:{tr:"Ocak buluşması",en:"January meeting"},
+  ag:{tr:["M3 ve M4 ürünleri, Charter taslağı","M5 ve M6'nın başlaması","E-kitabın son durumu","Final etkinliğinde kimin ne sunacağı"],
+      en:["M3 and M4 products, Charter draft","Starting M5 and M6","E-book status","Who presents what at the final event"]}},
+ {id:"#5",d:"2027-01-15",utc:17,host:["selma","esra"],
+  t:{tr:"Final etkinliği ve dijital sergi",en:"Final event and digital exhibition"},
+  ag:{tr:["Takımların ürün sunumları","“AI with Heart” e-kitabının tanıtımı","Ethical AI Charter'ın paylaşılması","Dijital serginin açılışı"],
+      en:["Team product presentations","Launching the “AI with Heart” e-book","Sharing the Ethical AI Charter","Opening the digital exhibition"]}},
+ {id:"#6",d:"2027-01-22",utc:17,host:["arcangelo","matea"],
+  t:{tr:"Kapanış ve değerlendirme buluşması",en:"Closing and evaluation meeting"},
+  ag:{tr:["Öğrencilerin son testi birlikte doldurması","Öğrenci geri bildirimleri","Sertifikalar ve teşekkür","Öğretmenler için Kalite Etiketi ve yaygınlaştırma özeti"],
+      en:["Students complete the post-test together","Student feedback","Certificates and thanks","For teachers: Quality Label and dissemination summary"]}}
+];
+
+const FORMNAMES = {logo:"Logo contest",meeting:"Hosting an online meeting",ebook:"AI with Heart e-book",survey:"Pre/post surveys",dissemination:"Dissemination",exhibition:"Digital Exhibition",twinspace:"TwinSpace pages & evidence",charter:"Ethical AI Charter"};
+
+const S = {
+ tr:{eyebrow:"eTwinning · Ekim 2026 – Ocak 2027",h1sub:"Toplantılar ve görevler",
+  lede:"Partner Planning Form'daki 9 yanıta göre hazırlanan toplantı takvimi ve görev dağılımı önerisi. Her görevin yanında formda gönüllü olunup olunmadığı ve gerekçe yazıyor. Toplantıda birlikte düzenleyebiliriz.",
+  edit:"Düzenle",editing:"Düzenleniyor",copy:"Özeti kopyala",reset:"Öneriye dön",
+  stats:["okul / ülke","öğretmen","öğrenci (tahmini)","görev + modül"],
+  fair:"Yük dengesi",sum:(mn,mx,av)=>`en az ${mn} · en çok ${mx} · ortalama ${av} puan`,
+  leg:["Modül puanı","Görev puanı","Ortalama"],
+  tabs:["Toplantılar","Görevler","Öğretmenler","Modüller"],zones:["Türkiye","İtalya · Hırvatistan","Portekiz"],
+  tJoint:"Öğrenci + öğretmen buluşması",host:"Ev sahibi",hostRole:"ev sahibi",agenda:"Gündem",
+  canAttend:"Formdaki uygunluğa göre katılabilir",cannot:"Bu saati formda seçmedi (tutanak ve kayıt paylaşılır)",
+  cal:"Google Takvim'e ekle",hostNote:"Her öğretmen en az bir buluşmada sunucu. Sunucular gündemi yönetir ve öğrenci sunumlarını açar.",revise:"Tarih ve saatler taslaktır. Ortaklarla birlikte değiştirilebilir.",
+  studentNote:"Öğrenciler evden ya da okuldan katılır. Bağlantıyı yalnızca veli izni alınmış öğrencilere kendi öğretmenleri iletir.",outL:"Çıktı",
+  lead:"Lider",sup:"Destek",none:"—",formok:"formda gönüllü",formno:"formda seçmemişti",newtask:"formda olmayan yeni görev",formtask:"formdaki görev",
+  showing:n=>`${n} kişisinin görevleri gösteriliyor`,clear:"Tümünü göster",
+  pts:"puan",avail:"Uygun zaman",students:"öğrenci",
+  pref1:"1. tercih",pref2:"2. tercih",nopref:"tercih yok",
+  rolesL:"lider",rolesS:"destek",mod:"Modül",
+  copied:"Özet kopyalandı",copyfail:"Kopyalanamadı. Aşağıdaki metni seçip kopyalayın.",resetdone:"Öneriye dönüldü",
+  notes:["Puanlama: modül liderliği 3, modül desteği 1, görev liderliği 2, görev desteği 1 puan. Selma'nın genel koordinasyon işi puana dahil değil.","Modül liderliğinin anlamı, o modülün etkinliklerini planlayıp ortaklara dağıtmak. Etkinlikleri her okul kendi öğrencileriyle yürütür.","Düzenlemeler yalnızca bu tarayıcıda saklanır. Kesinleşen dağılımı \"Özeti kopyala\" ile WhatsApp grubuna gönderebilirsiniz."],
+  summaryTitle:"MindScape AI – Görev dağılımı (öneri)"},
+ en:{eyebrow:"eTwinning · October 2026 – January 2027",h1sub:"Meetings and tasks",
+  lede:"A proposed meeting calendar and task distribution based on the 9 Partner Planning Form responses. Each task shows whether the person volunteered for it in the form and why it was assigned. We can adjust it together in the meeting.",
+  edit:"Edit",editing:"Editing",copy:"Copy summary",reset:"Back to proposal",
+  stats:["schools / countries","teachers","students (estimate)","tasks + modules"],
+  fair:"Workload balance",sum:(mn,mx,av)=>`min ${mn} · max ${mx} · average ${av} points`,
+  leg:["Module points","Task points","Average"],
+  tabs:["Meetings","Tasks","Teachers","Modules"],zones:["Türkiye","Italy · Croatia","Portugal"],
+  tJoint:"Students + teachers meeting",host:"Host",hostRole:"host",agenda:"Agenda",
+  canAttend:"Available according to the form",cannot:"Did not choose this time in the form (minutes and recording will be shared)",
+  cal:"Add to Google Calendar",hostNote:"Every teacher hosts at least one meeting. Hosts lead the agenda and introduce the student presentations.",revise:"Dates and times are a draft and can be changed together with partners.",
+  studentNote:"Students join from home or school. Each teacher sends the link only to students with parental consent.",outL:"Output",
+  lead:"Lead",sup:"Support",none:"—",formok:"volunteered in form",formno:"not chosen in form",newtask:"new task, not in the form",formtask:"task from the form",
+  showing:n=>`Showing tasks for ${n}`,clear:"Show all",
+  pts:"pts",avail:"Available",students:"students",
+  pref1:"1st choice",pref2:"2nd choice",nopref:"no preference",
+  rolesL:"lead",rolesS:"support",mod:"Module",
+  copied:"Summary copied",copyfail:"Couldn't copy. Select the text below and copy it.",resetdone:"Back to the proposal",
+  notes:["Scoring: module lead 3, module support 1, task lead 2, task support 1 point. Selma's overall coordination is not counted.","Leading a module means planning its activities and sharing them with partners; every school runs them with its own students.","Edits are saved in this browser only. Once agreed, use \"Copy summary\" to share the final list in the group chat."],
+  summaryTitle:"MindScape AI – Task distribution (proposal)"}
+};
+
+const KEY="mindscape-tasks-v7";
+function defaults(){const a={};MODULES.forEach(m=>a[m.id]={lead:m.lead,sup:[...m.sup]});TASKS.forEach(t=>a[t.id]={lead:t.lead,sup:[...t.sup]});return a}
+let A=defaults(), lang="en", tab=0, edit=false, sel=null;
+try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s){if(s.a)A=Object.assign(defaults(),s.a);if(s.lang)lang=s.lang;if(typeof s.tab==="number")tab=s.tab}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({a:A,lang,tab}))}catch(e){}}
+
+const L=()=>S[lang];
+const first=id=>T[id].n.split(" ")[0];
+const cc=c=>`<span class="cc ${c}">${c}</span>`;
+function loads(){
+  const r={};ORDER.forEach(id=>r[id]={m:0,t:0});
+  MODULES.forEach(m=>{const a=A[m.id];if(a.lead)r[a.lead].m+=3;[...new Set(a.sup)].filter(x=>x&&x!==a.lead).forEach(x=>r[x].m+=1)});
+  TASKS.forEach(t=>{const a=A[t.id];if(a.lead)r[a.lead].t+=2;[...new Set(a.sup)].filter(x=>x&&x!==a.lead).forEach(x=>r[x].t+=1)});
+  return r;
+}
+function involved(id,item){const a=A[item.id];return a.lead===id||a.sup.includes(id)}
+
+function renderStatic(){
+  const s=L();
+  document.documentElement.lang=lang;
+  eyebrow.textContent=s.eyebrow;h1sub.textContent=s.h1sub;lede.textContent=s.lede;
+  document.getElementById("lang-tr").setAttribute("aria-pressed",lang==="tr");
+  document.getElementById("lang-en").setAttribute("aria-pressed",lang==="en");
+  const be=document.getElementById("btn-edit");be.textContent=edit?s.editing:s.edit;be.setAttribute("aria-pressed",edit);
+  document.getElementById("btn-copy").textContent=s.copy;
+  document.getElementById("btn-reset").textContent=s.reset;
+  const students=ORDER.reduce((a,id)=>a+T[id].st,0);
+  const vals=["4","9",String(students),`${TASKS.length} + ${MODULES.length}`];
+  stats.innerHTML=vals.map((v,i)=>`<div class="stat"><b class="mono" style="font-family:var(--f-display)">${v}</b><span class="muted">${s.stats[i]}</span></div>`).join("");
+  document.getElementById("fair-title").textContent=s.fair;
+  legend.innerHTML=`<span><i class="sw" style="background:var(--accent)"></i>${s.leg[0]}</span><span><i class="sw" style="background:color-mix(in srgb,var(--accent) 45%,var(--surface))"></i>${s.leg[1]}</span><span><i class="sw" style="background:none;border-left:2px dashed var(--warm);border-radius:0;width:2px"></i>${s.leg[2]}</span>`;
+  tabs.innerHTML=s.tabs.map((x,i)=>`<button role="tab" type="button" id="tab-${i}" aria-selected="${i===tab}" data-tab="${i}">${x}</button>`).join("");
+  notes.innerHTML=s.notes.map(n=>`<p>${n}</p>`).join("");
+}
+
+function renderBars(){
+  const s=L(),r=loads();
+  const tot=ORDER.map(id=>r[id].m+r[id].t);
+  const mn=Math.min(...tot),mx=Math.max(...tot),av=(tot.reduce((a,b)=>a+b,0)/tot.length);
+  const scale=Math.max(12,mx+1);
+  document.getElementById("fair-sum").textContent=s.sum(mn,mx,av.toFixed(1).replace(".",lang==="tr"?",":"."));
+  bars.innerHTML=ORDER.map(id=>{const x=r[id],t=x.m+x.t;return `<div class="bar-row ${sel===id?"sel":""}" data-person="${id}" role="button" tabindex="0" aria-label="${T[id].n}: ${t} ${s.pts}">
+   <span class="bar-name">${cc(T[id].c)}${T[id].n}</span>
+   <div class="track"><span class="seg-mod" style="left:0;width:${x.m/scale*100}%"></span><span class="seg-task" style="left:${x.m/scale*100}%;width:${x.t/scale*100}%"></span><span class="avg" style="left:${av/scale*100}%"></span></div>
+   <span class="mono" style="text-align:right">${t}</span></div>`}).join("");
+}
+
+function personSelect(itemId,slot,val){
+  const s=L();
+  const opts=[`<option value="">${s.none}</option>`].concat(ORDER.map(id=>`<option value="${id}" ${id===val?"selected":""}>${T[id].c} · ${T[id].n}</option>`));
+  return `<select id="sel-${itemId}-${slot}" data-item="${itemId}" data-slot="${slot}" aria-label="${slot==="lead"?s.lead:s.sup}">${opts.join("")}</select>`;
+}
+function chip(id,isLead,item){
+  const s=L();let mark="";
+  if(item.k){const ok=T[id].vol.includes(item.k);mark=`<span class="mark ${ok?"ok":"new"}" title="${ok?s.formok:s.formno}">${ok?"✓":"○"}</span>`}
+  else if(item.id.startsWith("M")){const p=T[id].mp[item.id];mark=`<span class="pref ${p===1?"p1":""}">${p===1?s.pref1:p===2?s.pref2:s.nopref}</span>`}
+  return `<span class="chip ${isLead?"lead":""}">${cc(T[id].c)}${T[id].n}${mark}</span>`;
+}
+function peopleBlock(item){
+  const s=L(),a=A[item.id];
+  if(edit){
+    return `<div class="people"><div class="prow"><span class="role">${s.lead}</span>${personSelect(item.id,"lead",a.lead)}</div>
+     <div class="prow"><span class="role">${s.sup}</span>${personSelect(item.id,"s0",a.sup[0]||"")}${personSelect(item.id,"s1",a.sup[1]||"")}</div></div>`;
+  }
+  const sup=a.sup.filter(Boolean);
+  return `<div class="people"><div class="prow"><span class="role">${s.lead}</span>${a.lead?chip(a.lead,true,item):s.none}</div>
+   <div class="prow"><span class="role">${s.sup}</span>${sup.length?sup.map(x=>chip(x,false,item)).join(""):s.none}</div></div>`;
+}
+
+function renderTasks(){
+  const s=L();
+  return PHASES.map(p=>{
+    const items=TASKS.filter(t=>t.ph===p.id);
+    return `<section class="phase"><div class="phase-head"><h2>${p.t[lang]}</h2><span class="when">${p.d[lang]}</span></div>
+     <div class="list">${items.map(t=>`<div class="item ${sel&&!involved(sel,t)?"dim":""}">
+       <div class="item-main"><div class="item-title"><h3>${t.t[lang]}</h3><span class="when">${t.when[lang]}</span></div>
+        <p class="why">${t.w[lang]}</p>
+        <p class="out"><b>${s.outL}:</b> ${OUT[t.id][lang]}</p>
+        <div><span class="tag ${t.k?"form":"new"}">${t.k?s.formtask+" · "+FORMNAMES[t.k]:s.newtask}</span></div></div>
+       ${peopleBlock(t)}</div>`).join("")}</div></section>`;
+  }).join("");
+}
+function renderModules(){
+  const s=L();
+  return `<section class="phase"><div class="list">${MODULES.map(m=>`<div class="item ${sel&&!involved(sel,m)?"dim":""}">
+    <div class="item-main"><div class="item-title"><h3>${m.id} · ${m.t[lang]}</h3><span class="when">${m.when[lang]}</span></div>
+     <p class="why">${ORDER.filter(id=>T[id].mp[m.id]===1).map(first).join(", ")||s.nopref} <span class="muted">· ${s.pref1}</span></p></div>
+    ${peopleBlock(m)}</div>`).join("")}</div></section>`;
+}
+function renderTeachers(){
+  const s=L(),r=loads();
+  return `<div class="tgrid">${ORDER.map(id=>{
+    const p=T[id],x=r[id];
+    const rows=[];
+    MODULES.forEach(m=>{const a=A[m.id];if(a.lead===id)rows.push([s.rolesL,`${m.id} ${m.t[lang]}`,1]);else if(a.sup.includes(id))rows.push([s.rolesS,`${m.id} ${m.t[lang]}`,2])});
+    TASKS.forEach(t=>{const a=A[t.id];const tx=`${t.t[lang]} <span class="when">· ${t.when[lang]}</span>`;if(a.lead===id)rows.push([s.rolesL,tx,3]);else if(a.sup.includes(id))rows.push([s.rolesS,tx,4])});
+    MEETINGS.forEach(m=>{if(m.host.includes(id))rows.push([s.hostRole,`${m.t[lang]} <span class="when">· ${m.d.split("-").reverse().join(".")}</span>`,5])});
+    rows.sort((a,b)=>a[2]-b[2]);
+    return `<article class="tcard">
+     <div class="tcard-head"><div><h3 style="display:flex;gap:7px;align-items:center">${cc(p.c)}${p.n}</h3><p class="muted" style="font-size:13px">${p.role[lang]}</p></div>
+      <div style="text-align:right"><div class="score">${x.m+x.t}</div><span class="eyebrow">${s.pts}</span></div></div>
+     <ul>${rows.map(r=>`<li><span class="r">${r[0]}</span><span>${r[1]}</span></li>`).join("")}</ul>
+     <div class="meta"><span>${s.avail}: ${p.avail[lang]}</span><span>${p.st} ${s.students}</span></div></article>`}).join("")}</div>`;
+}
+
+function mDate(m){const [y,mo,d]=m.d.split("-").map(Number);return new Date(Date.UTC(y,mo-1,d,m.utc))}
+function hh(u,off){return String((u+off+24)%24).padStart(2,"0")+":00"}
+function canAttend(id,m){const a=AV[id],dow=mDate(m).getUTCDay();return a.days.includes(dow)&&m.utc>=a.from&&m.utc<a.to}
+function calLink(m){
+  const s=L(),st=mDate(m),en=new Date(st.getTime()+3600e3);
+  const f=x=>x.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+  const det=m.ag[lang].map(a=>"• "+a).join("\n")+"\n\n"+s.revise;
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("MindScape AI – "+m.t[lang])+"&dates="+f(st)+"/"+f(en)+"&details="+encodeURIComponent(det);
+}
+function renderMeetings(){
+  const s=L();
+  const dfmt=new Intl.DateTimeFormat(lang==="tr"?"tr-TR":"en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"UTC"});
+  return `<p class="draft">${s.hostNote} ${s.revise}</p><div class="mgrid">${MEETINGS.map(m=>{
+    const others=ORDER.filter(id=>!m.host.includes(id));
+    const yes=others.filter(id=>canAttend(id,m)),no=others.filter(id=>!canAttend(id,m));
+    return `<article class="mcard t">
+     <div class="mhead"><span class="tag form">${s.tJoint}</span><span class="mono muted">${m.id}</span></div>
+     <h3>${m.t[lang]}</h3>
+     <p class="mdate">${dfmt.format(mDate(m))}</p>
+     <div class="times"><div><span class="eyebrow">${s.zones[0]}</span><b class="mono">${hh(m.utc,3)}</b></div><div><span class="eyebrow">${s.zones[1]}</span><b class="mono">${hh(m.utc,1)}</b></div><div><span class="eyebrow">${s.zones[2]}</span><b class="mono">${hh(m.utc,0)}</b></div></div>
+     <div class="prow"><span class="role">${s.host}</span>${m.host.map(id=>`<span class="chip lead">${cc(T[id].c)}${T[id].n}</span>`).join("")}</div>
+     <div><span class="eyebrow">${s.agenda}</span><ul class="ag">${m.ag[lang].map(a=>`<li>${a}</li>`).join("")}</ul></div>
+     <div class="att"><p><b>${s.canAttend}:</b> ${yes.map(first).join(", ")||"—"}</p><p class="muted">${s.cannot}: ${no.map(first).join(", ")||"—"}</p><p class="muted">${s.studentNote}</p></div>
+     <a class="btn cal" href="${calLink(m)}" target="_blank" rel="noopener">${s.cal}</a>
+    </article>`}).join("")}</div>`;
+}
+
+function renderView(){
+  const s=L();
+  filter.innerHTML=sel&&(tab===1||tab===3)?`<div class="filter-note">${cc(T[sel].c)}<span>${s.showing(T[sel].n)}</span><button class="linkbtn" type="button" id="btn-clear">${s.clear}</button></div>`:"";
+  view.innerHTML=tab===0?renderMeetings():tab===1?renderTasks():tab===2?renderTeachers():renderModules();
+}
+function renderAll(){renderStatic();renderBars();renderView()}
+
+function summaryText(){
+  const s=L(),r=loads();
+  const lines=[s.summaryTitle,"",s.tabs[0].toUpperCase()];
+  MEETINGS.forEach(m=>lines.push(`  • ${m.d.split("-").reverse().join(".")} – ${m.t[lang]} – TR ${hh(m.utc,3)} / IT·HR ${hh(m.utc,1)} / PT ${hh(m.utc,0)} – ${s.host}: ${m.host.map(first).join(", ")}`));
+  lines.push("",s.tabs[2].toUpperCase());
+  ORDER.forEach(id=>{
+    const x=r[id];lines.push(`${T[id].n} (${T[id].c}) – ${x.m+x.t} ${s.pts}`);
+    MODULES.forEach(m=>{const a=A[m.id];if(a.lead===id)lines.push(`  • ${m.id} ${m.t[lang]} (${s.rolesL})`);else if(a.sup.includes(id))lines.push(`  • ${m.id} ${m.t[lang]} (${s.rolesS})`)});
+    TASKS.forEach(t=>{const a=A[t.id];if(a.lead===id)lines.push(`  • ${t.t[lang]} – ${t.when[lang]} (${s.rolesL})`);else if(a.sup.includes(id))lines.push(`  • ${t.t[lang]} – ${t.when[lang]} (${s.rolesS})`)});
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+let tt;function toast(m){const el=document.getElementById("toast");el.textContent=m;el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,2200)}
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button,[data-person]");if(!b)return;
+  if(b.id==="lang-tr"||b.id==="lang-en"){lang=b.id.slice(5);save();renderAll();return}
+  if(b.id==="btn-edit"){edit=!edit;renderAll();return}
+  if(b.id==="btn-reset"){A=defaults();save();renderAll();toast(L().resetdone);return}
+  if(b.id==="btn-clear"){sel=null;renderBars();renderView();return}
+  if(b.id==="btn-copy"){
+    const txt=summaryText();fallback.innerHTML="";
+    const fb=()=>{fallback.innerHTML=`<p class="muted" style="margin-bottom:6px">${L().copyfail}</p><textarea class="fallback" id="fallback-text" readonly></textarea>`;const ta=document.getElementById("fallback-text");ta.value=txt;ta.focus();ta.select()};
+    try{navigator.clipboard.writeText(txt).then(()=>toast(L().copied),fb)}catch(err){fb()}
+    return}
+  if(b.dataset.tab){tab=+b.dataset.tab;save();renderStatic();renderView();return}
+  if(b.dataset.person){sel=sel===b.dataset.person?null:b.dataset.person;if(tab!==1&&tab!==3)tab=1;save();renderStatic();renderBars();renderView()}
+});
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.dataset&&e.target.dataset.person){e.preventDefault();e.target.click()}});
+document.addEventListener("change",e=>{
+  const el=e.target;if(!el.dataset.item)return;
+  const a=A[el.dataset.item];
+  if(el.dataset.slot==="lead")a.lead=el.value||null;
+  else{const i=el.dataset.slot==="s0"?0:1;const sup=[a.sup[0]||"",a.sup[1]||""];sup[i]=el.value;a.sup=sup.filter(Boolean)}
+  save();renderBars();if(tab===2)renderView();
+});
+renderAll();
+</script>
+
+</body></html>
