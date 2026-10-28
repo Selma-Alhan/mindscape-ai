@@ -134,6 +134,8 @@ textarea.fallback{width:100%;min-height:200px;font-family:var(--f-mono);font-siz
 .out{font-size:13px}
 .out b{font-weight:700}
 .draft{font-size:14px;color:var(--muted)}
+.role{width:auto;min-width:62px}
+.tcard li .r{width:auto;min-width:54px}
 @media (prefers-reduced-motion:no-preference){.seg-mod,.seg-task{transition:width .25s ease,left .25s ease}}
 </style>
 </head>
@@ -147,8 +149,11 @@ textarea.fallback{width:100%;min-height:200px;font-family:var(--f-mono);font-siz
     </div>
     <div class="tools">
       <div class="seg" role="group" aria-label="Language">
-        <button id="lang-tr" type="button">TR</button>
         <button id="lang-en" type="button">EN</button>
+        <button id="lang-tr" type="button">TR</button>
+        <button id="lang-it" type="button">IT</button>
+        <button id="lang-hr" type="button">HR</button>
+        <button id="lang-pt" type="button">PT</button>
       </div>
       <button class="btn" id="btn-edit" type="button" aria-pressed="false"></button>
       <button class="btn" id="btn-copy" type="button"></button>
@@ -364,10 +369,185 @@ const S = {
   summaryTitle:"MindScape AI – Task distribution (proposal)"}
 };
 
+/* Italian, Croatian and Portuguese translations, merged into the data above */
+const LOC={en:"en-GB",tr:"tr-TR",it:"it-IT",hr:"hr-HR",pt:"pt-PT"};
+const AVF={selma:[[1,2,4],"a",18,"TRT"],esra:[[5],"a",18,"TRT"],anil:[[1,2,3,4],"a",18,"TRT"],ugur:[[3],"r","15:00–18:00","TRT"],arcangelo:[[1,2,3,4,5],"a",18,"CET"],matea:[[1,2,3,4,5],"b",12,"CET"],palma:[[1,2,3,4,5],"r","12:00–15:00","CET"],milena:[[4,5],"a",12,"CET"],pedro:[[5],"r","15:00–18:00","WET"]};
+const DAYS={it:["","Lun","Mar","Mer","Gio","Ven"],hr:["","Pon","Uto","Sri","Čet","Pet"],pt:["","Seg","Ter","Qua","Qui","Sex"]};
+const PHR={it:{a:"dopo le %",b:"prima delle %"},hr:{a:"nakon %",b:"prije %"},pt:{a:"depois das %",b:"antes das %"}};
+function availStr(lg,id){
+  const [d,k,v,z]=AVF[id],D=DAYS[lg];
+  const cons=d.length>2&&d.every((x,i)=>i===0||x===d[i-1]+1);
+  const ds=cons?D[d[0]]+"–"+D[d[d.length-1]]:d.map(x=>D[x]).join(", ");
+  const tm=k==="r"?v:PHR[lg][k].replace("%",String(v).padStart(2,"0")+":00");
+  return `${ds} · ${tm} (${z})`;
+}
+const XL={
+ it:{
+  S:{eyebrow:"eTwinning · ottobre 2026 – gennaio 2027",h1sub:"Incontri e compiti",
+   lede:"Proposta di calendario degli incontri e di distribuzione dei compiti basata sulle 9 risposte al Partner Planning Form. Per ogni compito è indicato se la persona si era offerta nel modulo e perché le è stato assegnato. Possiamo modificarla insieme durante l'incontro.",
+   edit:"Modifica",editing:"In modifica",copy:"Copia riepilogo",reset:"Torna alla proposta",
+   stats:["scuole / paesi","docenti","studenti (stima)","compiti + moduli"],
+   fair:"Equilibrio del carico",sum:(mn,mx,av)=>`min ${mn} · max ${mx} · media ${av} punti`,
+   leg:["Punti moduli","Punti compiti","Media"],
+   tabs:["Incontri","Compiti","Docenti","Moduli"],zones:["Turchia","Italia · Croazia","Portogallo"],
+   tJoint:"Incontro studenti + docenti",host:"Conduce",hostRole:"conduce",agenda:"Ordine del giorno",
+   canAttend:"Disponibili secondo il modulo",cannot:"Non hanno scelto questo orario nel modulo (verbale e registrazione saranno condivisi)",
+   cal:"Aggiungi a Google Calendar",hostNote:"Ogni docente conduce almeno un incontro. I conduttori guidano l'ordine del giorno e introducono le presentazioni degli studenti.",revise:"Date e orari sono una bozza e possono essere cambiati insieme ai partner.",
+   studentNote:"Gli studenti si collegano da casa o da scuola. Ogni docente invia il link solo agli studenti con il consenso dei genitori.",outL:"Risultato",
+   lead:"Resp.",sup:"Supporto",none:"—",formok:"si è offerto/a nel modulo",formno:"non scelto nel modulo",newtask:"nuovo compito, non nel modulo",formtask:"compito del modulo",
+   showing:n=>`Compiti di ${n}`,clear:"Mostra tutto",
+   pts:"punti",avail:"Disponibilità",students:"studenti",
+   pref1:"1ª scelta",pref2:"2ª scelta",nopref:"nessuna preferenza",
+   rolesL:"resp.",rolesS:"supporto",mod:"Modulo",
+   copied:"Riepilogo copiato",copyfail:"Copia non riuscita. Seleziona il testo qui sotto e copialo.",resetdone:"Tornati alla proposta",
+   notes:["Punteggio: responsabile di modulo 3, supporto al modulo 1, responsabile di compito 2, supporto al compito 1 punto. Il coordinamento generale di Selma non è conteggiato.","Guidare un modulo significa pianificarne le attività e condividerle con i partner; ogni scuola le svolge con i propri studenti.","Le modifiche vengono salvate solo in questo browser. Una volta concordata, usate \"Copia riepilogo\" per condividere la lista finale nel gruppo."],
+   summaryTitle:"MindScape AI – Distribuzione dei compiti (proposta)"},
+  months:{November:"novembre",December:"dicembre",January:"gennaio"},
+  roles:{selma:"Fondatrice / coordinatrice · Fisica",esra:"Docente di progetto · Inglese",anil:"Docente di progetto · Matematica",ugur:"Orientatore scolastico",arcangelo:"Fondatore / coordinatore · Matematica e Fisica",matea:"Pedagogista scolastica",palma:"Docente di progetto · Lingua croata",milena:"Docente di progetto · Bibliotecaria scolastica",pedro:"Docente di progetto · Geografia"},
+  ph:{p1:["Avvio","30 ott – 13 nov"],p2:["Squadre e moduli","16 nov – 18 dic"],p3:["Prodotti e chiusura","dic – 22 gen"],p4:["Per tutta la durata","ott – gen"]},
+  tasks:{
+   t7:["Struttura e pagine del TwinSpace","Nel modulo solo Arcangelo e Selma hanno scelto il TwinSpace. Guida l'Italia, la Turchia supporta.","entro il 6 nov","Pagine dei moduli e discussioni nel forum del TwinSpace"],
+   t2:["Consensi dei genitori e regole per un uso sicuro dell'IA","Proposto da Anıl. Matea, come pedagogista, prepara il modello comune; ogni scuola raccoglie il consenso dei propri genitori.","entro il 13 nov","Modello comune di consenso e pagina con le regole IA per gli studenti"],
+   t1:["Pre-test degli studenti (Google Forms)","Lavorano insieme le due figure di orientamento che si sono offerte per i questionari. Il pre-test misura benessere e consapevolezza sull'IA.","2–13 nov","Modulo del pre-test e sintesi dei risultati"],
+   t3:["Attività di conoscenza (bacheca Padlet di presentazione)","Nuovo compito, non presente nel modulo. L'idea di Palma delle interviste sull'uso dell'IA può esserne il contenuto.","2–13 nov","Bacheca Padlet di presentazione e interviste sull'uso dell'IA"],
+   t4:["Concorso per il logo","Volontari: Palma, Anıl e Pedro. Pedro guida già M6, quindi il concorso lo gestisce Palma.","Lancio 2 nov · voto 23–25 nov","Logo del progetto e risultati del voto"],
+   t8:["Formazione delle squadre miste internazionali","Nuovo compito. Milena ha scritto che tiene a far conoscere i partner tra loro; Matea dà supporto pedagogico.","23–27 nov","Elenco delle squadre miste (studenti di ogni paese in ogni squadra)"],
+   t9:["Proposte e voto degli studenti (Padlet + Forms)","Il metodo, incluso lo studente coordinatore a rotazione, è stato proposto da Anıl.","23 nov – 4 dic","Elenco delle attività scelte e risultati del voto"],
+   t11:["Gestione tecnica degli incontri (link, registrazione, stanze)","Entrambi si sono offerti per organizzare incontri. Mentre i conduttori guidano i contenuti, loro aprono il link, registrano e preparano le stanze delle squadre.","Tutti gli incontri","Link, registrazione e screenshot di ogni incontro"],
+   t12:["Ethical AI Charter (Carta etica dell'IA)","L'ha scelto solo Arcangelo, che però ha già M2 e il TwinSpace. Lo guida Uğur, perché è legato al modulo M3 sull'etica.","1–18 dic","Carta etica dell'IA scritta insieme dagli studenti"],
+   t13:["E-book comune “AI with Heart”","Milena è la bibliotecaria e usa Book Creator; il team croato si occupa di questo prodotto.","1 dic – 15 gen","E-book in Book Creator con un contributo di ogni squadra"],
+   t14:["Post-test e rapporto di valutazione","La stessa coppia (Uğur e Matea) cura entrambi i test, così i risultati sono confrontabili. Uğur guida il pre-test, Matea il post-test.","11–18 gen","Modulo del post-test e rapporto di confronto pre/post"],
+   t15:["Mostra digitale ed evento finale","Nel modulo l'ha scelto solo Selma; Esra aveva proposto una mostra come contributo della sua scuola.","15 gen","Pagina della mostra digitale e scaletta dell'evento finale"],
+   t16:["Attestati di partecipazione (studenti e docenti)","Nuovo compito. Entrambi usano Canva; equilibra il carico di Pedro.","entro il 22 gen","Modello di attestato in Canva e attestati per tutti"],
+   t18:["Candidature al Quality Label eTwinning","Nuovo compito. Ogni docente presenta la propria candidatura; il responsabile segue l'elenco delle evidenze e le scadenze.","gen – feb","Lista di controllo delle evidenze e calendario delle candidature"],
+   t5:["Pianificazione degli incontri (date, ordine del giorno, avvisi)","Selma come coordinatrice; anche Uğur si è offerto per gli incontri.","Una volta al mese","Calendario degli incontri, link e ordini del giorno"],
+   t6:["Verbali degli incontri","Nuovo compito. Una persona in CET e una in TRT, così chi è presente può prendere appunti.","Dopo ogni incontro","Breve verbale nel TwinSpace per ogni incontro"],
+   t10:["Album delle evidenze (foto, registri, diari)","Ogni scuola carica le proprie evidenze; il responsabile controlla cosa manca.","Fine di ogni mese","Album mensili delle evidenze"],
+   t17:["Disseminazione (siti scolastici, social media, notizie)","C'erano cinque volontari; è stato affidato a Esra e Pedro, che avevano un carico minore. Ogni scuola pubblica sui propri canali.","Per tutta la durata","Notizie sul sito della scuola e sui social media"]},
+  meet:{
+   "#1":["Incontro di avvio",["Docenti e studenti si conoscono","Obiettivi del progetto e moduli della MindScape Academy","Calendario e bacheca dei compiti","Lancio del concorso per il logo","Regole per un uso sicuro dell'IA"]],
+   "#2":["Incontro su squadre e logo",["Risultato del concorso per il logo","Annuncio delle squadre miste e presentazione delle squadre","Avvio delle proposte di attività e del voto","Primi prodotti di M1 e M2"]],
+   "#3":["Incontro di metà progetto",["Presentazioni delle squadre su M1 e M2","Risultati del voto degli studenti","Avvio di M3, M4 e della Ethical AI Charter","Lavoro asincrono per il periodo di verifiche e vacanze di dicembre"]],
+   "#4":["Incontro di gennaio",["Prodotti di M3 e M4, bozza della Charter","Avvio di M5 e M6","Stato dell'e-book","Chi presenta cosa all'evento finale"]],
+   "#5":["Evento finale e mostra digitale",["Presentazioni dei prodotti delle squadre","Presentazione dell'e-book “AI with Heart”","Condivisione della Ethical AI Charter","Apertura della mostra digitale"]],
+   "#6":["Incontro di chiusura e valutazione",["Gli studenti compilano insieme il post-test","Feedback degli studenti","Attestati e ringraziamenti","Per i docenti: Quality Label e sintesi della disseminazione"]]}
+ },
+ hr:{
+  S:{eyebrow:"eTwinning · listopad 2026. – siječanj 2027.",h1sub:"Susreti i zadaci",
+   lede:"Prijedlog rasporeda susreta i podjele zadataka na temelju 9 odgovora u Partner Planning Formu. Uz svaki zadatak piše je li se osoba za njega javila u obrascu i zašto joj je dodijeljen. Možemo ga zajedno doraditi na susretu.",
+   edit:"Uredi",editing:"Uređivanje",copy:"Kopiraj sažetak",reset:"Vrati prijedlog",
+   stats:["škole / zemlje","učitelji","učenici (procjena)","zadaci + moduli"],
+   fair:"Ravnoteža opterećenja",sum:(mn,mx,av)=>`najmanje ${mn} · najviše ${mx} · prosjek ${av} bodova`,
+   leg:["Bodovi za module","Bodovi za zadatke","Prosjek"],
+   tabs:["Susreti","Zadaci","Učitelji","Moduli"],zones:["Turska","Italija · Hrvatska","Portugal"],
+   tJoint:"Susret učenika i učitelja",host:"Vode",hostRole:"vodi",agenda:"Dnevni red",
+   canAttend:"Dostupni prema obrascu",cannot:"U obrascu nisu odabrali ovo vrijeme (zapisnik i snimka bit će podijeljeni)",
+   cal:"Dodaj u Google kalendar",hostNote:"Svaki učitelj vodi barem jedan susret. Voditelji vode dnevni red i najavljuju predstavljanja učenika.",revise:"Datumi i vremena su nacrt i mogu se mijenjati zajedno s partnerima.",
+   studentNote:"Učenici se uključuju od kuće ili iz škole. Svaki učitelj šalje poveznicu samo učenicima koji imaju suglasnost roditelja.",outL:"Rezultat",
+   lead:"Voditelj",sup:"Podrška",none:"—",formok:"javio/la se u obrascu",formno:"nije odabrano u obrascu",newtask:"novi zadatak, nije bio u obrascu",formtask:"zadatak iz obrasca",
+   showing:n=>`Prikazani su zadaci: ${n}`,clear:"Prikaži sve",
+   pts:"bodova",avail:"Dostupnost",students:"učenika",
+   pref1:"1. izbor",pref2:"2. izbor",nopref:"bez izbora",
+   rolesL:"voditelj",rolesS:"podrška",mod:"Modul",
+   copied:"Sažetak je kopiran",copyfail:"Kopiranje nije uspjelo. Označite tekst ispod i kopirajte ga.",resetdone:"Prijedlog je vraćen",
+   notes:["Bodovanje: voditelj modula 3, podrška modulu 1, voditelj zadatka 2, podrška zadatku 1 bod. Selmina opća koordinacija nije uračunata.","Voditi modul znači planirati njegove aktivnosti i podijeliti ih s partnerima; svaka ih škola provodi sa svojim učenicima.","Izmjene se spremaju samo u ovom pregledniku. Kad se dogovorimo, konačni popis podijelite u grupi putem gumba \"Kopiraj sažetak\"."],
+   summaryTitle:"MindScape AI – Podjela zadataka (prijedlog)"},
+  months:{November:"studeni",December:"prosinac",January:"siječanj"},
+  roles:{selma:"Osnivačica / koordinatorica · Fizika",esra:"Učiteljica u projektu · Engleski jezik",anil:"Učitelj u projektu · Matematika",ugur:"Školski savjetnik",arcangelo:"Osnivač / koordinator · Matematika i fizika",matea:"Školska pedagoginja",palma:"Učiteljica u projektu · Hrvatski jezik",milena:"Učiteljica u projektu · Školska knjižničarka",pedro:"Učitelj u projektu · Geografija"},
+  ph:{p1:["Početak","30. lis – 13. stu"],p2:["Timovi i moduli","16. stu – 18. pro"],p3:["Proizvodi i završetak","pro – 22. sij"],p4:["Tijekom cijelog projekta","lis – sij"]},
+  tasks:{
+   t7:["Struktura i stranice TwinSpacea","U obrascu su TwinSpace odabrali samo Arcangelo i Selma. Vodi Italija, Turska pomaže.","do 6. stu","Stranice modula i teme na forumu TwinSpacea"],
+   t2:["Suglasnosti roditelja i pravila sigurne uporabe UI","Prijedlog je dao Anıl. Matea kao pedagoginja priprema zajednički predložak, a svaka škola prikuplja suglasnosti svojih roditelja.","do 13. stu","Zajednički predložak suglasnosti i stranica s pravilima UI za učenike"],
+   t1:["Početni test za učenike (Google Forms)","Zajedno rade dvoje stručnih suradnika koji su se javili za upitnike. Početni test mjeri dobrobit i svijest o UI.","2. – 13. stu","Obrazac početnog testa i sažetak rezultata"],
+   t3:["Aktivnost upoznavanja (Padlet zid za predstavljanje)","Novi zadatak koji nije bio u obrascu. Palmina ideja o intervjuima o korištenju UI može biti sadržaj aktivnosti.","2. – 13. stu","Padlet zid za predstavljanje i intervjui o korištenju UI"],
+   t4:["Natječaj za logo","Javili su se Palma, Anıl i Pedro. Pedro već vodi M6, pa natječaj vodi Palma.","Objava 2. stu · glasanje 23. – 25. stu","Logo projekta i rezultati glasanja"],
+   t8:["Formiranje mješovitih međunarodnih timova učenika","Novi zadatak. Milena je napisala da joj je važno upoznavanje partnera; Matea pruža pedagošku podršku.","23. – 27. stu","Popis mješovitih timova (u svakom timu učenici iz svih zemalja)"],
+   t9:["Prijedlozi i glasanje učenika (Padlet + Forms)","Metodu, uključujući učenika koordinatora koji se izmjenjuje, predložio je Anıl.","23. stu – 4. pro","Popis odabranih aktivnosti i rezultati glasanja"],
+   t11:["Tehničko vođenje susreta (poveznica, snimanje, sobe)","Oboje su se javili za organizaciju susreta. Dok voditelji vode sadržaj, oni otvaraju poveznicu, snimaju i postavljaju sobe za timove.","Svi susreti","Poveznica, snimka i snimke zaslona svakog susreta"],
+   t12:["Ethical AI Charter (Etička povelja o UI)","Odabrao ga je samo Arcangelo, ali on već ima M2 i TwinSpace. Vodi ga Uğur jer je povezan s modulom M3 o etici.","1. – 18. pro","Etička povelja o UI koju su učenici zajedno napisali"],
+   t13:["Zajednička e-knjiga “AI with Heart”","Milena je knjižničarka i koristi Book Creator; hrvatski tim preuzima ovaj proizvod.","1. pro – 15. sij","E-knjiga u Book Creatoru s prilogom svakog tima"],
+   t14:["Završni test i izvješće o vrednovanju","Isti par (Uğur i Matea) provodi oba testa kako bi se rezultati mogli usporediti. Uğur vodi početni, a Matea završni test.","11. – 18. sij","Obrazac završnog testa i izvješće s usporedbom početnog i završnog testa"],
+   t15:["Digitalna izložba i završni događaj","U obrascu ga je odabrala samo Selma; Esra je izložbu predložila kao doprinos svoje škole.","15. sij","Stranica digitalne izložbe i plan završnog događaja"],
+   t16:["Potvrde o sudjelovanju (učenici i učitelji)","Novi zadatak. Oboje koriste Canvu; uravnotežuje Pedrovo opterećenje.","do 22. sij","Predložak potvrde u Canvi i potvrde za sve sudionike"],
+   t18:["Prijave za eTwinning oznaku kvalitete","Novi zadatak. Svaki se učitelj prijavljuje sam; voditelj prati popis dokaza i rokove.","sij – velj","Popis dokaza i raspored prijava"],
+   t5:["Planiranje susreta (datumi, dnevni red, obavijesti)","Selma kao koordinatorica; Uğur se također javio za susrete.","Jednom mjesečno","Raspored susreta, poveznice i dnevni redovi"],
+   t6:["Zapisnici sa susreta","Novi zadatak. Jedna osoba iz CET i jedna iz TRT zone, kako bi bilješke vodio onaj tko je prisutan.","Nakon svakog susreta","Kratki zapisnik u TwinSpaceu za svaki susret"],
+   t10:["Albumi dokaza (fotografije, evidencije, dnevnici)","Svaka škola prenosi svoje dokaze; voditelj provjerava što nedostaje.","Kraj svakog mjeseca","Mjesečni albumi dokaza"],
+   t17:["Diseminacija (školske mrežne stranice, društvene mreže, vijesti)","Javilo se petero; zadatak je dodijeljen Esri i Pedru, koji su imali manje opterećenje. Svaka škola objavljuje na svojim kanalima.","Tijekom projekta","Vijesti na školskoj mrežnoj stranici i društvenim mrežama"]},
+  meet:{
+   "#1":["Uvodni susret",["Upoznavanje učitelja i učenika","Ciljevi projekta i moduli MindScape Academy","Raspored i ploča zadataka","Objava natječaja za logo","Pravila sigurne uporabe UI"]],
+   "#2":["Susret: timovi i logo",["Rezultat natječaja za logo","Objava mješovitih timova i upoznavanje timova","Početak prijedloga aktivnosti i glasanja","Prvi proizvodi iz M1 i M2"]],
+   "#3":["Susret na polovici projekta",["Predstavljanja timova iz M1 i M2","Rezultati glasanja učenika","Početak M3, M4 i Ethical AI Charter","Asinkroni rad tijekom prosinačkih ispita i praznika"]],
+   "#4":["Siječanjski susret",["Proizvodi iz M3 i M4, nacrt povelje","Početak M5 i M6","Stanje e-knjige","Tko što predstavlja na završnom događaju"]],
+   "#5":["Završni događaj i digitalna izložba",["Predstavljanje proizvoda timova","Predstavljanje e-knjige “AI with Heart”","Dijeljenje Ethical AI Charter","Otvaranje digitalne izložbe"]],
+   "#6":["Završni susret i vrednovanje",["Učenici zajedno ispunjavaju završni test","Povratne informacije učenika","Potvrde i zahvale","Za učitelje: oznaka kvalitete i sažetak diseminacije"]]}
+ },
+ pt:{
+  S:{eyebrow:"eTwinning · outubro 2026 – janeiro 2027",h1sub:"Encontros e tarefas",
+   lede:"Proposta de calendário de encontros e de distribuição de tarefas com base nas 9 respostas ao Partner Planning Form. Cada tarefa indica se a pessoa se ofereceu no formulário e porque lhe foi atribuída. Podemos ajustá-la em conjunto no encontro.",
+   edit:"Editar",editing:"A editar",copy:"Copiar resumo",reset:"Voltar à proposta",
+   stats:["escolas / países","professores","alunos (estimativa)","tarefas + módulos"],
+   fair:"Equilíbrio da carga",sum:(mn,mx,av)=>`mín. ${mn} · máx. ${mx} · média ${av} pontos`,
+   leg:["Pontos de módulos","Pontos de tarefas","Média"],
+   tabs:["Encontros","Tarefas","Professores","Módulos"],zones:["Turquia","Itália · Croácia","Portugal"],
+   tJoint:"Encontro alunos + professores",host:"Anfitriões",hostRole:"anfitrião",agenda:"Ordem de trabalhos",
+   canAttend:"Disponíveis segundo o formulário",cannot:"Não escolheram este horário no formulário (a ata e a gravação serão partilhadas)",
+   cal:"Adicionar ao Google Calendar",hostNote:"Cada professor é anfitrião de pelo menos um encontro. Os anfitriões conduzem a ordem de trabalhos e apresentam as intervenções dos alunos.",revise:"As datas e horas são uma proposta e podem ser alteradas em conjunto com os parceiros.",
+   studentNote:"Os alunos participam a partir de casa ou da escola. Cada professor envia o link apenas aos alunos com autorização dos encarregados de educação.",outL:"Resultado",
+   lead:"Líder",sup:"Apoio",none:"—",formok:"ofereceu-se no formulário",formno:"não escolhido no formulário",newtask:"nova tarefa, não incluída no formulário",formtask:"tarefa do formulário",
+   showing:n=>`A mostrar as tarefas de ${n}`,clear:"Mostrar tudo",
+   pts:"pts",avail:"Disponibilidade",students:"alunos",
+   pref1:"1.ª escolha",pref2:"2.ª escolha",nopref:"sem preferência",
+   rolesL:"líder",rolesS:"apoio",mod:"Módulo",
+   copied:"Resumo copiado",copyfail:"Não foi possível copiar. Selecione o texto abaixo e copie-o.",resetdone:"Voltou à proposta",
+   notes:["Pontuação: líder de módulo 3, apoio a módulo 1, líder de tarefa 2, apoio a tarefa 1 ponto. A coordenação geral da Selma não é contabilizada.","Liderar um módulo significa planear as suas atividades e partilhá-las com os parceiros; cada escola realiza-as com os seus alunos.","As alterações ficam guardadas apenas neste navegador. Depois de acordada, usem \"Copiar resumo\" para partilhar a lista final no grupo."],
+   summaryTitle:"MindScape AI – Distribuição de tarefas (proposta)"},
+  months:{November:"novembro",December:"dezembro",January:"janeiro"},
+  roles:{selma:"Fundadora / coordenadora · Física",esra:"Professora do projeto · Inglês",anil:"Professor do projeto · Matemática",ugur:"Orientador escolar",arcangelo:"Fundador / coordenador · Matemática e Física",matea:"Pedagoga escolar",palma:"Professora do projeto · Língua croata",milena:"Professora do projeto · Bibliotecária escolar",pedro:"Professor do projeto · Geografia"},
+  ph:{p1:["Arranque","30 out – 13 nov"],p2:["Equipas e módulos","16 nov – 18 dez"],p3:["Produtos e encerramento","dez – 22 jan"],p4:["Durante todo o projeto","out – jan"]},
+  tasks:{
+   t7:["Estrutura e páginas do TwinSpace","No formulário, só o Arcangelo e a Selma escolheram o TwinSpace. Itália lidera, Turquia apoia.","até 6 nov","Páginas dos módulos e tópicos do fórum no TwinSpace"],
+   t2:["Autorizações dos encarregados de educação e regras de uso seguro da IA","Proposta do Anıl. A Matea, como pedagoga, prepara o modelo comum; cada escola recolhe as autorizações das suas famílias.","até 13 nov","Modelo comum de autorização e página com regras de IA para os alunos"],
+   t1:["Pré-teste dos alunos (Google Forms)","Trabalham juntos os dois técnicos de orientação que se ofereceram para os questionários. O pré-teste mede o bem-estar e a consciência sobre IA.","2–13 nov","Formulário do pré-teste e resumo dos resultados"],
+   t3:["Atividade de apresentação (mural Padlet)","Nova tarefa, não incluída no formulário. A ideia da Palma de entrevistas sobre o uso da IA pode ser o seu conteúdo.","2–13 nov","Mural Padlet de apresentação e entrevistas sobre o uso da IA"],
+   t4:["Concurso do logótipo","Voluntários: Palma, Anıl e Pedro. O Pedro já lidera o M6, por isso é a Palma que conduz o concurso.","Lançamento 2 nov · votação 23–25 nov","Logótipo do projeto e resultados da votação"],
+   t8:["Formação das equipas mistas internacionais","Nova tarefa. A Milena escreveu que valoriza que os parceiros se conheçam; a Matea dá apoio pedagógico.","23–27 nov","Lista das equipas mistas (alunos de todos os países em cada equipa)"],
+   t9:["Propostas e votação dos alunos (Padlet + Forms)","O método, incluindo um aluno coordenador rotativo, foi proposto pelo Anıl.","23 nov – 4 dez","Lista das atividades escolhidas e resultados da votação"],
+   t11:["Gestão técnica dos encontros (link, gravação, salas)","Ambos se ofereceram para organizar encontros. Enquanto os anfitriões conduzem o conteúdo, eles abrem o link, gravam e criam as salas das equipas.","Todos os encontros","Link, gravação e capturas de ecrã de cada encontro"],
+   t12:["Ethical AI Charter (Carta ética da IA)","Só o Arcangelo a escolheu, mas ele já tem o M2 e o TwinSpace. É liderada pelo Uğur, por estar ligada ao módulo M3 de ética.","1–18 dez","Carta ética da IA escrita em conjunto pelos alunos"],
+   t13:["E-book conjunto “AI with Heart”","A Milena é bibliotecária e usa o Book Creator; a equipa croata fica com este produto.","1 dez – 15 jan","E-book no Book Creator com um contributo de cada equipa"],
+   t14:["Pós-teste e relatório de avaliação","A mesma dupla (Uğur e Matea) faz os dois testes, para que os resultados sejam comparáveis. O Uğur lidera o pré-teste e a Matea o pós-teste.","11–18 jan","Formulário do pós-teste e relatório comparativo pré/pós"],
+   t15:["Exposição digital e evento final","No formulário só a Selma a escolheu; a Esra propôs uma exposição como contributo da sua escola.","15 jan","Página da exposição digital e alinhamento do evento final"],
+   t16:["Certificados de participação (alunos e professores)","Nova tarefa. Ambos usam o Canva; equilibra a carga do Pedro.","até 22 jan","Modelo de certificado no Canva e certificados para todos"],
+   t18:["Candidaturas ao Selo de Qualidade eTwinning","Nova tarefa. Cada professor candidata-se individualmente; o responsável acompanha a lista de evidências e os prazos.","jan – fev","Lista de verificação de evidências e calendário das candidaturas"],
+   t5:["Planeamento dos encontros (datas, ordens de trabalhos, avisos)","A Selma como coordenadora; o Uğur também se ofereceu para os encontros.","Uma vez por mês","Calendário dos encontros, links e ordens de trabalhos"],
+   t6:["Atas dos encontros","Nova tarefa. Uma pessoa em CET e outra em TRT, para que quem estiver presente possa tomar notas.","Depois de cada encontro","Ata breve no TwinSpace de cada encontro"],
+   t10:["Álbuns de evidências (fotos, registos, diários)","Cada escola carrega as suas evidências; o responsável verifica o que falta.","Fim de cada mês","Álbuns mensais de evidências"],
+   t17:["Disseminação (sites das escolas, redes sociais, notícias)","Havia cinco voluntários; ficou com a Esra e o Pedro, que tinham menos carga. Cada escola publica nos seus canais.","Ao longo do projeto","Notícias no site da escola e nas redes sociais"]},
+  meet:{
+   "#1":["Encontro de arranque",["Professores e alunos conhecem-se","Objetivos do projeto e módulos da MindScape Academy","Calendário e quadro de tarefas","Lançamento do concurso do logótipo","Regras de uso seguro da IA"]],
+   "#2":["Encontro das equipas e do logótipo",["Resultado do concurso do logótipo","Anúncio das equipas mistas e apresentação das equipas","Início das propostas de atividades e da votação","Primeiros produtos do M1 e do M2"]],
+   "#3":["Encontro a meio do projeto",["Apresentações das equipas sobre o M1 e o M2","Resultados da votação dos alunos","Início do M3, do M4 e da Ethical AI Charter","Trabalho assíncrono para o período de testes e férias de dezembro"]],
+   "#4":["Encontro de janeiro",["Produtos do M3 e do M4, rascunho da Charter","Início do M5 e do M6","Ponto de situação do e-book","Quem apresenta o quê no evento final"]],
+   "#5":["Evento final e exposição digital",["Apresentações dos produtos das equipas","Lançamento do e-book “AI with Heart”","Partilha da Ethical AI Charter","Abertura da exposição digital"]],
+   "#6":["Encontro de encerramento e avaliação",["Os alunos preenchem juntos o pós-teste","Feedback dos alunos","Certificados e agradecimentos","Para os professores: Selo de Qualidade e resumo da disseminação"]]}
+ }
+};
+(function applyXL(){
+  for(const lg of ["it","hr","pt"]){
+    const x=XL[lg];S[lg]=x.S;
+    TASKS.forEach(t=>{const v=x.tasks[t.id];t.t[lg]=v[0];t.w[lg]=v[1];t.when[lg]=v[2];OUT[t.id][lg]=v[3]});
+    MEETINGS.forEach(m=>{const v=x.meet[m.id];m.t[lg]=v[0];m.ag[lg]=v[1]});
+    PHASES.forEach(p=>{const v=x.ph[p.id];p.t[lg]=v[0];p.d[lg]=v[1]});
+    MODULES.forEach(m=>{m.t[lg]=m.t.en;m.when[lg]=x.months[m.when.en]});
+    ORDER.forEach(id=>{T[id].role[lg]=x.roles[id];T[id].avail[lg]=availStr(lg,id)});
+  }
+})();
+
 const KEY="mindscape-tasks-v7";
 function defaults(){const a={};MODULES.forEach(m=>a[m.id]={lead:m.lead,sup:[...m.sup]});TASKS.forEach(t=>a[t.id]={lead:t.lead,sup:[...t.sup]});return a}
 let A=defaults(), lang="en", tab=0, edit=false, sel=null;
-try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s){if(s.a)A=Object.assign(defaults(),s.a);if(s.lang)lang=s.lang;if(typeof s.tab==="number")tab=s.tab}}catch(e){}
+try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s){if(s.a)A=Object.assign(defaults(),s.a);if(s.lang&&S[s.lang])lang=s.lang;if(typeof s.tab==="number")tab=s.tab}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify({a:A,lang,tab}))}catch(e){}}
 
 const L=()=>S[lang];
@@ -385,8 +565,7 @@ function renderStatic(){
   const s=L();
   document.documentElement.lang=lang;
   eyebrow.textContent=s.eyebrow;h1sub.textContent=s.h1sub;lede.textContent=s.lede;
-  document.getElementById("lang-tr").setAttribute("aria-pressed",lang==="tr");
-  document.getElementById("lang-en").setAttribute("aria-pressed",lang==="en");
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",b.id==="lang-"+lang));
   const be=document.getElementById("btn-edit");be.textContent=edit?s.editing:s.edit;be.setAttribute("aria-pressed",edit);
   document.getElementById("btn-copy").textContent=s.copy;
   document.getElementById("btn-reset").textContent=s.reset;
@@ -404,7 +583,7 @@ function renderBars(){
   const tot=ORDER.map(id=>r[id].m+r[id].t);
   const mn=Math.min(...tot),mx=Math.max(...tot),av=(tot.reduce((a,b)=>a+b,0)/tot.length);
   const scale=Math.max(12,mx+1);
-  document.getElementById("fair-sum").textContent=s.sum(mn,mx,av.toFixed(1).replace(".",lang==="tr"?",":"."));
+  document.getElementById("fair-sum").textContent=s.sum(mn,mx,av.toFixed(1).replace(".",lang==="en"?".":","));
   bars.innerHTML=ORDER.map(id=>{const x=r[id],t=x.m+x.t;return `<div class="bar-row ${sel===id?"sel":""}" data-person="${id}" role="button" tabindex="0" aria-label="${T[id].n}: ${t} ${s.pts}">
    <span class="bar-name">${cc(T[id].c)}${T[id].n}</span>
    <div class="track"><span class="seg-mod" style="left:0;width:${x.m/scale*100}%"></span><span class="seg-task" style="left:${x.m/scale*100}%;width:${x.t/scale*100}%"></span><span class="avg" style="left:${av/scale*100}%"></span></div>
@@ -480,7 +659,7 @@ function calLink(m){
 }
 function renderMeetings(){
   const s=L();
-  const dfmt=new Intl.DateTimeFormat(lang==="tr"?"tr-TR":"en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"UTC"});
+  const dfmt=new Intl.DateTimeFormat(LOC[lang],{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"UTC"});
   return `<p class="draft">${s.hostNote} ${s.revise}</p><div class="mgrid">${MEETINGS.map(m=>{
     const others=ORDER.filter(id=>!m.host.includes(id));
     const yes=others.filter(id=>canAttend(id,m)),no=others.filter(id=>!canAttend(id,m));
@@ -520,7 +699,7 @@ let tt;function toast(m){const el=document.getElementById("toast");el.textConten
 
 document.addEventListener("click",e=>{
   const b=e.target.closest("button,[data-person]");if(!b)return;
-  if(b.id==="lang-tr"||b.id==="lang-en"){lang=b.id.slice(5);save();renderAll();return}
+  if(b.id&&b.id.startsWith("lang-")){lang=b.id.slice(5);save();renderAll();return}
   if(b.id==="btn-edit"){edit=!edit;renderAll();return}
   if(b.id==="btn-reset"){A=defaults();save();renderAll();toast(L().resetdone);return}
   if(b.id==="btn-clear"){sel=null;renderBars();renderView();return}
