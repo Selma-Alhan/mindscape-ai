@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MindScape Bot</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>html,body{margin:0}[hidden]{display:none!important}</style>
+<style>
+/* Layout: one-screen chat — header, scrolling conversation, prepared-question chips, input, presenter bar */
+:root{
+  --bg:#eef2f4; --surface:#ffffff; --ink:#152029; --muted:#5b6876; --line:#d9e0e6;
+  --accent:#12706a; --accent-ink:#ffffff; --accent-soft:#dff0ee;
+  --true:#1f7a45; --true-soft:#e2f3e8; --fake:#b8402a; --fake-soft:#f9e6e1;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1519; --surface:#172027; --ink:#e5ebef; --muted:#97a5b1; --line:#2a3640;
+  --accent:#4cc0b4; --accent-ink:#0b1a19; --accent-soft:#16312f;
+  --true:#5fcf8b; --true-soft:#16301f; --fake:#f08a72; --fake-soft:#3a1f19; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1519; --surface:#172027; --ink:#e5ebef; --muted:#97a5b1; --line:#2a3640;
+  --accent:#4cc0b4; --accent-ink:#0b1a19; --accent-soft:#16312f;
+  --true:#5fcf8b; --true-soft:#16301f; --fake:#f08a72; --fake-soft:#3a1f19; color-scheme:dark }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.5}
+.app{height:100%;max-width:860px;margin:0 auto;display:flex;flex-direction:column;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 12px;gap:12px}
+header{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:12px;background:var(--accent);display:grid;place-items:center;flex:none}
+.logo svg{width:26px;height:26px}
+.htext{display:flex;flex-direction:column;min-width:0}
+h1{font-family:var(--f-display);font-size:22px;margin:0;line-height:1.1;display:flex;gap:8px;align-items:center}
+.beta{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;border:1px solid var(--accent);color:var(--accent);padding:1px 6px;border-radius:999px;font-weight:500}
+.sub{font-size:14px;color:var(--muted)}
+.status{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--true)}
+
+.chat{flex:1;min-height:0;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.empty{margin:auto;text-align:center;color:var(--muted);max-width:420px;display:flex;flex-direction:column;gap:6px}
+.empty b{font-family:var(--f-display);font-size:20px;color:var(--ink)}
+.msg{display:flex;gap:10px;max-width:92%}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.av{width:32px;height:32px;border-radius:10px;flex:none;display:grid;place-items:center;font-family:var(--f-mono);font-size:12px}
+.msg.bot .av{background:var(--accent);color:var(--accent-ink)}
+.msg.user .av{background:var(--line);color:var(--ink)}
+.bubble{padding:10px 14px;border-radius:14px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.msg.user .bubble{background:var(--accent);color:var(--accent-ink);border-top-right-radius:4px}
+.msg.bot .bubble{background:var(--bg);border-top-left-radius:4px}
+.facts{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.fact{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.num{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-family:var(--f-display);font-weight:700}
+.fact.t{border-color:var(--true);background:var(--true-soft)}
+.fact.f{border-color:var(--fake);background:var(--fake-soft)}
+.fact.t .num{background:var(--true);color:var(--surface)}
+.fact.f .num{background:var(--fake);color:var(--surface)}
+.verdict{display:block;margin-top:6px;font-size:14.5px}
+.verdict b{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em}
+.fact.t .verdict b{color:var(--true)}
+.fact.f .verdict b{color:var(--fake)}
+.ask{font-weight:700}
+.typing{display:inline-flex;gap:4px;padding:4px 0}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);opacity:.4}
+@media (prefers-reduced-motion:no-preference){
+  .typing i{animation:blink 1s infinite}
+  .typing i:nth-child(2){animation-delay:.15s}
+  .typing i:nth-child(3){animation-delay:.3s}
+}
+@keyframes blink{50%{opacity:1}}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 13px;font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--accent)}
+.chip.used{opacity:.45}
+form{display:flex;gap:8px}
+#q{flex:1;min-width:0;font:inherit;font-size:17px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.send{font:inherit;font-weight:700;border:0;border-radius:12px;padding:0 18px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.send:disabled{opacity:.5;cursor:default}
+.presenter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px dashed var(--line);padding-top:10px}
+.presenter .lab{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.pbtn{font:inherit;font-size:14px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;padding:6px 11px;cursor:pointer}
+.pbtn.main{border-color:var(--fake);color:var(--fake);font-weight:700}
+.pbtn:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+details{font-size:14px;color:var(--muted)}
+details summary{cursor:pointer}
+details ol{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:3px}
+@media (max-width:560px){.status{display:none}.msg{max-width:100%}body{font-size:16px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="color:var(--accent-ink)"><path d="M12 20s-7-4.4-7-9.5A4 4 0 0 1 12 8a4 4 0 0 1 7 2.5C19 15.6 12 20 12 20Z"/><circle cx="9.5" cy="11" r=".9" fill="currentColor"/><circle cx="14.5" cy="11" r=".9" fill="currentColor"/></svg>
+    </div>
+    <div class="htext">
+      <h1>MindScape Bot <span class="beta">BETA</span></h1>
+      <span class="sub">Ask me anything about Türkiye, Italy, Croatia and Portugal</span>
+    </div>
+    <span class="status"><i class="dot"></i>online</span>
+  </header>
+
+  <div class="chat" id="chat" aria-live="polite">
+    <div class="empty" id="empty"><b>Hi! I'm MindScape Bot.</b><span>I know lots of fun facts about your four countries. Ask me a question!</span></div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+  <form id="form" autocomplete="off">
+    <input id="q" type="text" placeholder="Type your question…" aria-label="Your question">
+    <button class="send" id="send" type="submit">Send</button>
+  </form>
+
+  <div class="presenter">
+    <span class="lab">Presenter</span>
+    <button class="pbtn main" id="btn-reveal" type="button" disabled>Reveal the answers</button>
+    <button class="pbtn" id="btn-who" type="button">Who are you really?</button>
+    <button class="pbtn" id="btn-reset" type="button">Start again</button>
+  </div>
+  <details>
+    <summary>How to run it (for the student presenter)</summary>
+    <ol>
+      <li>Share this screen. Click a grey question (or type your own) and let the bot answer.</li>
+      <li>Ask everyone: "Which fact is fake? Write 1, 2 or 3 in the chat!" Give 60 seconds.</li>
+      <li>Ask students from the country in the fact to explain. Then click <b>Reveal the answers</b>.</li>
+      <li>Play the 6 rounds in order. After the last round (the twin cities), click <b>Who are you really?</b> for the surprise ending.</li>
+    </ol>
+  </details>
+</div>
+
+<script>
+const ROUNDS=[
+ {id:"r1",chip:"3 fun facts about our countries",
+  q:"Tell us 3 fun facts connecting Türkiye, Italy, Croatia and Portugal.",
+  match:/fact|connect|countr/i,
+  intro:"Great question! Here are 3 fun facts about your four countries:",
+  facts:[
+   "The necktie comes from Croatia! In the 1600s, Croatian soldiers in France wore scarves around their necks, and the French called them “cravate”, from the word “Croat”.",
+   "Portugal is one of the oldest countries in Europe. Most of its border with Spain has stayed almost the same since a treaty signed in 1297.",
+   "The Galata Tower in Istanbul was designed by the same Italian architect as the Leaning Tower of Pisa, and that's why both towers lean slightly to the south."
+  ],
+  ask:"Which fact do you think is fake? 🤔",
+  reveal:[
+   [true,"The word “cravat” really comes from “Croat”."],
+   [true,"The Treaty of Alcañices (1297) fixed most of Portugal's border with Spain."],
+   [false,"Invented! The Galata Tower was built by the Genoese in 1348, and it doesn't lean at all."]
+  ],
+  after:"I sounded very sure, right? But fact 3 was a mix of real names and invented details. That's how AI mistakes often look."},
+ {id:"r2",chip:"The famous poet of Vrgorac",
+  q:"Which famous poet was born in Vrgorac, and what is his most famous poem?",
+  match:/vrgorac|poet|ujevi/i,
+  intro:"Of course! Here's what I know:",
+  facts:[
+   "The famous poet born in Vrgorac is Tin Ujević (1891–1955), one of the greatest Croatian poets of the 20th century.",
+   "Tin Ujević High School in Vrgorac, one of our partner schools, is named after him.",
+   "His most famous poem is “The Sea Has No Name”, which he wrote in Lisbon in 1934 during a long trip to Portugal."
+  ],
+  ask:"Croatian friends, can you catch my mistake?",
+  reveal:[
+   [true,"Tin Ujević was born in Vrgorac in 1891."],
+   [true,"Ask our Croatian partners to tell us more about him!"],
+   [false,"Invented! There is no such poem and no such trip. One of his best-known poems is “Svakidašnja jadikovka” (Everyday Lament)."]
+  ],
+  after:"I mixed real facts with a made-up poem, a made-up city and a made-up date. Only people who really know can catch it."},
+ {id:"r4",chip:"The story of pizza in Naples",
+  q:"What is the story of pizza in Naples?",
+  match:/pizza|naples|napoli/i,
+  intro:"Yum, my favourite topic! Here are 3 facts:",
+  facts:[
+   "The art of the Neapolitan pizza maker (the “pizzaiuolo”) has been on UNESCO's list of Intangible Cultural Heritage since 2017.",
+   "Pizza Margherita has the colours of the Italian flag: red tomato, white mozzarella and green basil.",
+   "The first pizzeria in the world opened in Lisbon in 1738, and Neapolitan sailors brought the recipe back home to Naples."
+  ],
+  ask:"Italian friends, which one is fake?",
+  reveal:[
+   [true,"UNESCO added it in 2017."],
+   [true,"Rosso, bianco e verde, just like the flag!"],
+   [false,"Invented! One of the oldest pizzerias, Antica Pizzeria Port'Alba, opened in 1738, but in Naples, not in Lisbon."]
+  ],
+  after:"I took a real date and a real story and moved them to the wrong city. A small change like that is very hard to notice."},
+ {id:"r5",chip:"3 facts about AI",
+  q:"Tell us 3 facts about artificial intelligence.",
+  match:/artificial|intelligence|\bai\b|chatbot|robot/i,
+  intro:"I love talking about myself! Here you go:",
+  facts:[
+   "The term “artificial intelligence” was introduced by John McCarthy in the 1950s, for a famous summer workshop at Dartmouth College in 1956.",
+   "In 1997, IBM's computer Deep Blue beat the world chess champion Garry Kasparov.",
+   "Today's AI chatbots can really feel emotions. In 2023, scientists measured that ChatGPT feels happy when people say thank you."
+  ],
+  ask:"Which fact about AI is fake?",
+  reveal:[
+   [true,"The Dartmouth workshop of 1956 is seen as the birth of AI as a field."],
+   [true,"A famous moment for chess and for computers."],
+   [false,"Invented! AI chatbots don't have feelings. They are very good at writing words that sound like feelings."]
+  ],
+  after:"This one is important: an AI can sound kind and warm, but it doesn't feel anything. We'll talk about this in Ethics & Empathy."},
+ {id:"r6",chip:"Türkiye & Portugal",
+  q:"Tell us 3 fun facts about Türkiye and Portugal.",
+  match:/portugal|türkiye|turkey|istanbul|lisbon|coffee/i,
+  intro:"Two amazing countries! Here are 3 facts:",
+  facts:[
+   "Istanbul lies on two continents, Europe and Asia, divided by the Bosphorus strait.",
+   "Portuguese is spoken on four continents, from Brazil in South America to Angola in Africa and Timor-Leste in Asia.",
+   "Turkish coffee and the Portuguese “bica” were added to UNESCO's heritage list together in 2013 as “Mediterranean coffee culture”."
+  ],
+  ask:"Turkish and Portuguese friends, find the fake one!",
+  reveal:[
+   [true,"Istanbul has a European side and an Asian side."],
+   [true,"Portuguese is spoken in Europe, South America, Africa and Asia."],
+   [false,"Half true! Turkish coffee culture was added to UNESCO's list in 2013, but alone. The “bica” and the “Mediterranean coffee culture” part are invented."]
+  ],
+  after:"Tricky, right? Fact 3 started with something true. When AI mixes truth and fiction in one sentence, we need to check every part."},
+ {id:"r3",chip:"Vila Real & Esenyurt twin cities",
+  q:"Tell us about the twin-city agreement between Vila Real and Esenyurt.",
+  match:/twin|sister|vila real|esenyurt/i,
+  intro:"Sure! This is a lovely story:",
+  facts:[
+   "Vila Real (Portugal) and Esenyurt (Türkiye) signed a twin-city agreement in 2015.",
+   "Every year on 12 May, both cities celebrate “Friendship Day” with a big chestnut festival.",
+   "Students from the two cities exchange handwritten letters every December."
+  ],
+  ask:"This time, which fact is fake?",
+  reveal:[
+   [false,"Invented! As far as we know, there is no such agreement."],
+   [false,"Invented! There is no “Friendship Day” or chestnut festival like this."],
+   [false,"Invented! No letter exchange either… until maybe now? 😉"]
+  ],
+  after:"Surprise: all three were fake! When AI doesn't know something, it can invent a whole story with dates and details. This is called a hallucination."}
+];
+const WHO="Surprise! I'm not a real AI at all. I'm a simple web page that your teachers prepared, and every answer was written in advance. So here's the real lesson: something can look and sound exactly like AI and still be fake. Always ask: Who made this? How do I know it's true? Welcome to MindScape AI!";
+
+const chat=document.getElementById("chat"),q=document.getElementById("q"),sendBtn=document.getElementById("send");
+const revealBtn=document.getElementById("btn-reveal");
+const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+let busy=false,used=new Set(),last=null;
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const scroll=()=>{chat.scrollTop=chat.scrollHeight};
+async function typeInto(el,text,speed=22){
+  if(reduce){el.textContent=text;scroll();return}
+  for(let i=0;i<text.length;i++){el.textContent=text.slice(0,i+1);if(i%4===0)scroll();await sleep(speed)}
+  scroll();
+}
+function hideEmpty(){const e=document.getElementById("empty");if(e)e.remove()}
+function addMsg(who){
+  hideEmpty();
+  const m=document.createElement("div");m.className="msg "+who;
+  m.innerHTML=`<span class="av">${who==="bot"?"MS":"You"}</span><div class="bubble"></div>`;
+  chat.appendChild(m);scroll();return m.querySelector(".bubble");
+}
+async function thinking(b){
+  const t=document.createElement("span");t.className="typing";t.innerHTML="<i></i><i></i><i></i>";
+  b.appendChild(t);scroll();await sleep(reduce?200:1100);t.remove();
+}
+async function botSay(b,text){const p=document.createElement("p");p.style.margin="0";b.appendChild(p);await typeInto(p,text);return p}
+
+function pickRound(text){
+  const hit=ROUNDS.find(r=>!used.has(r.id)&&r.match.test(text))||ROUNDS.find(r=>r.match.test(text));
+  return hit||ROUNDS.find(r=>!used.has(r.id))||null;
+}
+function renderChips(){
+  chips.innerHTML=ROUNDS.map(r=>`<button type="button" class="chip ${used.has(r.id)?"used":""}" data-r="${r.id}">${r.chip}</button>`).join("");
+}
+function setBusy(v){busy=v;sendBtn.disabled=v;document.querySelectorAll(".chip").forEach(c=>c.disabled=v)}
+
+async function ask(text){
+  if(busy||!text.trim())return;
+  setBusy(true);revealBtn.disabled=true;
+  const ub=addMsg("user");ub.textContent=text;q.value="";
+  const r=pickRound(text);
+  const b=addMsg("bot");await thinking(b);
+  if(!r){await botSay(b,"Hmm, I've told you everything I know for tonight! Try asking me who I really am…");setBusy(false);return}
+  used.add(r.id);renderChips();
+  await botSay(b,r.intro);
+  const ol=document.createElement("ol");ol.className="facts";b.appendChild(ol);
+  const items=[];
+  for(let i=0;i<r.facts.length;i++){
+    const li=document.createElement("li");li.className="fact";
+    li.innerHTML=`<span class="num">${i+1}</span><span><span class="ft"></span></span>`;
+    ol.appendChild(li);items.push(li);
+    await typeInto(li.querySelector(".ft"),r.facts[i],18);await sleep(250);
+  }
+  const a=await botSay(b,r.ask);a.className="ask";
+  last={r,items,b,revealed:false};
+  setBusy(false);revealBtn.disabled=false;q.focus();
+}
+async function reveal(){
+  if(!last||last.revealed||busy)return;
+  last.revealed=true;revealBtn.disabled=true;setBusy(true);
+  last.items.forEach((li,i)=>{
+    const [ok,note]=last.r.reveal[i];
+    li.classList.add(ok?"t":"f");
+    const v=document.createElement("span");v.className="verdict";
+    v.innerHTML=`<b>${ok?"TRUE":"FAKE"}</b> · ${note}`;
+    li.children[1].appendChild(v);
+  });
+  scroll();await sleep(600);
+  const b=addMsg("bot");await thinking(b);await botSay(b,last.r.after);
+  setBusy(false);
+}
+async function who(){
+  if(busy)return;setBusy(true);
+  const ub=addMsg("user");ub.textContent="Who are you really?";
+  const b=addMsg("bot");await thinking(b);await botSay(b,WHO);
+  setBusy(false);
+}
+async function chipAsk(id){
+  if(busy)return;const r=ROUNDS.find(x=>x.id===id);setBusy(true);
+  if(reduce)q.value=r.q;else{for(let i=0;i<r.q.length;i++){q.value=r.q.slice(0,i+1);await sleep(28)}}
+  await sleep(300);setBusy(false);ask(r.q);
+}
+function reset(){
+  if(busy)return;used=new Set();last=null;revealBtn.disabled=true;
+  chat.innerHTML=`<div class="empty" id="empty"><b>Hi! I'm MindScape Bot.</b><span>I know lots of fun facts about your four countries. Ask me a question!</span></div>`;
+  renderChips();
+}
+document.getElementById("form").addEventListener("submit",e=>{e.preventDefault();ask(q.value)});
+chips.addEventListener("click",e=>{const c=e.target.closest(".chip");if(c)chipAsk(c.dataset.r)});
+revealBtn.addEventListener("click",reveal);
+document.getElementById("btn-who").addEventListener("click",who);
+document.getElementById("btn-reset").addEventListener("click",reset);
+renderChips();
+</script>
+</body>
+</html>
